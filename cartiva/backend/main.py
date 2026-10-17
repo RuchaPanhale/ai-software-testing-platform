@@ -1,0 +1,17 @@
+from fastapi import FastAPI
+
+app = FastAPI(
+    title="Cartiva API",
+    description="Backend API for the Cartiva fashion application.",
+    version="0.1.0",
+)
+
+
+@app.get("/health", tags=["System"])
+def health_check() -> dict[str, str]:
+    """Confirm that the Cartiva API is responding."""
+    return {
+        "status": "ok",
+        "application_id": "cartiva",
+        "version": app.version,
+    }
