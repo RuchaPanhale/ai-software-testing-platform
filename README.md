@@ -9,7 +9,8 @@ Faculty supervisor: Professor Shiqi Zhang
 ## Project status
 
 In development. Cartiva's FastAPI health endpoint is implemented
-and manually verified. Local PostgreSQL setup is operational.
+and manually verified. Local PostgreSQL is operational, and Python
+database connectivity is verified using a restricted application account.
 Catalog, cart, checkout, and the testing platform are not implemented yet.
 
 ## Planned systems
@@ -111,3 +112,78 @@ Database data persists in the named Docker volume.
 Initialization credentials apply when the database volume is first
 created. Editing `.env` later does not automatically change an
 existing database user's password.
+
+## Cartiva Application Database Account
+
+After initializing PostgreSQL, create a restricted application account.
+Perform this setup once per fresh database volume.
+
+Open PostgreSQL as the local administrator:
+
+```bash
+docker compose exec postgres psql -U cartiva_admin -d cartiva
+```
+
+At the PostgreSQL prompt, run:
+
+```sql
+CREATE ROLE cartiva_app WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE;
+```
+
+Set its password interactively:
+
+```text
+\password cartiva_app
+```
+
+Grant connection and schema access:
+
+```sql
+GRANT CONNECT ON DATABASE cartiva TO cartiva_app;
+GRANT USAGE ON SCHEMA public TO cartiva_app;
+```
+
+Exit:
+
+```text
+\q
+```
+
+Set CARTIVA_DB_PASSWORD in your local .env to the password you chose.
+Keep .env.example as a template without actual passwords.
+
+This account currently has connection and schema-usage permissions.
+Table permissions will be added alongside database migrations.
+The application account must not be used to create or migrate tables.
+
+## Python Database Connection
+
+Activate the project environment and install dependencies:
+
+```bash
+source .venv/bin/activate
+python -m pip install -r cartiva/backend/requirements.txt
+```
+
+The backend reads CARTIVA_DB_ settings from the root .env file.
+Python running on the host connects to 127.0.0.1:5433.
+
+Verify connectivity from the project root:
+
+```bash
+python - <<'PY'
+from sqlalchemy import text
+from cartiva.backend.database import get_engine
+
+with get_engine().connect() as connection:
+    row = connection.execute(
+        text("SELECT current_database(), current_user")
+    ).one()
+    print(f"Database: {row[0]}")
+    print(f"User: {row[1]}")
+    print("Python-to-PostgreSQL connection successful.")
+PY
+```
+
+Expected database: cartiva.
+Expected user: cartiva_app.
