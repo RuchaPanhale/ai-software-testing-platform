@@ -8,14 +8,15 @@ Faculty supervisor: Professor Shiqi Zhang
 
 ## Project status
 
-In development. Local environment and Git repository initialized.
-Application features are not implemented yet.
+In development. Cartiva's FastAPI health endpoint is implemented
+and manually verified. Local PostgreSQL setup is operational.
+Catalog, cart, checkout, and the testing platform are not implemented yet.
 
 ## Planned systems
 
 ### Cartiva
 A full-stack fashion e-commerce application with a React and
-TypeScript frontend, FastAPI backend, and SQLite database.
+TypeScript frontend, FastAPI backend, and PostgreSQL database.
 
 Cartiva will be the first application under test.
 
@@ -57,3 +58,56 @@ Activate the Python environment from the project folder:
 
 ```bash
 source .venv/bin/activate
+
+## Local PostgreSQL Setup
+
+Docker Desktop must be running.
+
+For first-time setup, copy the configuration template:
+
+```bash
+cp .env.example .env
+```
+
+Replace the password placeholder in `.env` with a unique
+local-development password. Do not overwrite an existing configured
+`.env` or commit its contents.
+
+Start PostgreSQL:
+
+```bash
+docker compose up -d postgres
+```
+
+Check database health:
+
+```bash
+docker compose ps
+```
+
+Verify connectivity:
+
+```bash
+docker compose exec postgres psql -U cartiva_admin -d cartiva -c "SELECT current_database(), current_user;"
+```
+
+Connection details for applications running on the Mac:
+- Host: 127.0.0.1
+- Port: 5433
+- Database: cartiva
+
+The initialization account is for local database administration.
+A restricted application account will be configured separately.
+
+Stop PostgreSQL when finished:
+
+```bash
+docker compose stop postgres
+```
+
+Database data persists in the named Docker volume.
+`docker compose down -v` deletes that volume and its database data.
+
+Initialization credentials apply when the database volume is first
+created. Editing `.env` later does not automatically change an
+existing database user's password.

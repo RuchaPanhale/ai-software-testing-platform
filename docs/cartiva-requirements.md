@@ -43,7 +43,7 @@ No registration or login is required.
 
 - Frontend: React and TypeScript, built with Vite.
 - Backend: Python and FastAPI.
-- Database: SQLite with SQLModel.
+- Database: PostgreSQL 18, running locally through Docker Compose, with SQLModel and planned Alembic migrations.
 - Communication: JSON REST APIs.
 - Backend tests: Pytest.
 - Selected browser workflow tests: Playwright.
