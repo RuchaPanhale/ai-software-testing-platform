@@ -230,7 +230,20 @@ integer cents, stock quantity, and an optional image URL.
 Sold-out variants remain visible with a stock quantity of zero.
 An empty catalog returns an empty list.
 
-Search, filtering, and pagination are not implemented yet.
+Search and filtering are supported through optional query parameters:
+
+- `q`: matches every search word against a product's name, category,
+  and a single variant's color.
+- `category`: matches an exact category.
+- `color`: matches an exact variant color.
+
+Matching ignores capitalization and normalizes extra whitespace.
+Search and filters are applied together. Responses include only matching
+variants, including sold-out variants. No matches return HTTP 200 with `[]`.
+
+Example: `/products?q=green%20shirt&category=Shirts`
+
+Pagination is not implemented yet.
 
 
 ### Run catalog API tests
@@ -253,3 +266,8 @@ and do not require Uvicorn or Docker to be running.
 
 These tests cover API behavior. PostgreSQL-specific migrations,
 permissions, and concurrency require separate integration tests.
+
+Search tests also cover capitalization, extra whitespace, combined and
+conflicting filters, exact category/color matching, blank inputs, and
+no-result cases. They verify that search does not combine colors from
+different variants or match description text.

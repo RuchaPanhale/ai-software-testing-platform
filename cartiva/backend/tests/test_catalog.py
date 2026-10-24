@@ -120,3 +120,154 @@ def test_catalog_orders_products_and_groups_variants(catalog_environment):
     )
     assert sold_out["stock_quantity"] == 0
     assert sold_out["image_url"] is None
+
+@pytest.mark.parametrize(
+    "params, expected",
+    [
+        (
+            {"q": "green shirt"},
+            [("Everyday Shirt", "S", "Green", 8),
+             ("Everyday Shirt", "M", "Green", 0)],
+        ),
+        (
+            {"q": "  GREEN   ShiRT  "},
+            [("Everyday Shirt", "S", "Green", 8),
+             ("Everyday Shirt", "M", "Green", 0)],
+        ),
+        (
+            {"q": "BLACK jeans"},
+            [("Straight-Leg Jeans", "30", "Black", 7)],
+        ),
+        (
+            {"category": " shirts ", "color": " iVORy "},
+            [("Everyday Shirt", "M", "Ivory", 6)],
+        ),
+        (
+            {"q": "green shirt", "color": "Black"},
+            [],
+        ),
+        (
+            {"q": "green ivory shirt"},
+            [],
+        ),
+        (
+            {"q": "purple shoes"},
+            [],
+        ),
+        (
+            {"q": "green shirt", "category": "Jeans"},
+            [],
+        ),
+        (
+            {"category": "Shirt"},
+            [],
+        ),
+        (
+            {"color": "Gre"},
+            [],
+        ),
+        (
+            {"q": "soft cotton"},
+            [],
+        ),
+        (
+            {"q": "   ", "category": "  ", "color": " "},
+            [
+                ("Everyday Shirt", "S", "Green", 8),
+                ("Everyday Shirt", "M", "Green", 0),
+                ("Everyday Shirt", "M", "Ivory", 6),
+                ("Straight-Leg Jeans", "30", "Black", 7),
+            ],
+        ),
+    ],
+    ids=[
+        "search-matching-variants",
+        "ignore-case-and-extra-spaces",
+        "search-black-jeans",
+        "combine-category-and-color",
+        "conflicting-search-and-color",
+        "do-not-combine-different-variant-colors",
+        "no-search-results",
+        "conflicting-search-and-category",
+        "category-filter-is-exact",
+        "color-filter-is-exact",
+        "description-is-not-searchable",
+        "blank-filters-return-full-catalog",
+    ],
+)
+def test_catalog_search_and_filters(catalog_environment, params, expected):
+    client, engine = catalog_environment
+
+    with Session(engine) as session:
+        shirt = Product(
+            name="Everyday Shirt",
+            description="Soft cotton for everyday wear.",
+            category="Shirts",
+        )
+        jeans = Product(
+            name="Straight-Leg Jeans",
+            description="Classic denim.",
+            category="Jeans",
+        )
+        session.add_all([shirt, jeans])
+        session.flush()
+
+        session.add_all(
+            [
+                ProductVariant(
+                    product_id=shirt.id,
+                    size="S",
+                    color="Green",
+                    price_cents=2999,
+                    stock_quantity=8,
+                ),
+                ProductVariant(
+                    product_id=shirt.id,
+                    size="M",
+                    color="Green",
+                    price_cents=2999,
+                    stock_quantity=0,
+                ),
+                ProductVariant(
+                    product_id=shirt.id,
+                    size="M",
+                    color="Ivory",
+                    price_cents=2999,
+                    stock_quantity=6,
+                ),
+                ProductVariant(
+                    product_id=jeans.id,
+                    size="30",
+                    color="Black",
+                    price_cents=5999,
+                    stock_quantity=7,
+                ),
+            ]
+        )
+        session.commit()
+
+    response = client.get("/products", params=params)
+
+    assert response.status_code == 200
+    products = response.json()
+
+    actual = [
+        (
+            product["name"],
+            variant["size"],
+            variant["color"],
+            variant["stock_quantity"],
+        )
+        for product in products
+        for variant in product["variants"]
+    ]
+
+    assert actual == expected
+
+    # Each product should appear once and contain matching variants.
+    product_ids = [product["id"] for product in products]
+    assert len(product_ids) == len(set(product_ids))
+    assert all(product["variants"] for product in products)
+
+    if not expected:
+        assert products == []
