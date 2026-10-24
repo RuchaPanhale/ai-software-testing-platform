@@ -187,3 +187,26 @@ PY
 
 Expected database: cartiva.
 Expected user: cartiva_app.
+
+
+### Seed the local product catalog
+
+After configuring `.env`, starting PostgreSQL, and applying migrations,
+run this command from the repository root with the Python virtual
+environment activated:
+
+```bash
+python -m cartiva.backend.seed
+```
+
+On an empty catalog, this creates three sample products and eight variants,
+including a sold-out variant for inventory testing.
+
+The script uses administrator credentials from `.env` for this setup
+operation. The API continues using its restricted application account.
+
+All inserts run in one transaction. If either catalog table already
+contains data, the script skips initialization without changing existing
+records. It does not reset inventory or synchronize catalog updates.
+
+Run this script once at a time for local development.
