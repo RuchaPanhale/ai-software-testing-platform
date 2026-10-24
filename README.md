@@ -231,3 +231,25 @@ Sold-out variants remain visible with a stock quantity of zero.
 An empty catalog returns an empty list.
 
 Search, filtering, and pagination are not implemented yet.
+
+
+### Run catalog API tests
+
+From the repository root, with the virtual environment activated:
+
+```bash
+python -m pytest cartiva/backend/tests/test_catalog.py -v
+```
+
+The tests verify:
+- An empty catalog returns HTTP 200 and an empty list.
+- Products are sorted correctly and include their associated variants.
+- Prices remain in integer cents.
+- Sold-out variants remain visible.
+
+Each test uses a fresh in-memory SQLite database through a FastAPI
+dependency override. Tests do not modify the local PostgreSQL catalog
+and do not require Uvicorn or Docker to be running.
+
+These tests cover API behavior. PostgreSQL-specific migrations,
+permissions, and concurrency require separate integration tests.
