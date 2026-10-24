@@ -210,3 +210,24 @@ contains data, the script skips initialization without changing existing
 records. It does not reset inventory or synchronize catalog updates.
 
 Run this script once at a time for local development.
+
+
+### Catalog API
+
+With PostgreSQL running and the sample catalog seeded, start the API:
+
+```bash
+python -m uvicorn cartiva.backend.main:app --reload
+```
+
+- Catalog: http://127.0.0.1:8000/products
+- Interactive API documentation: http://127.0.0.1:8000/docs
+
+`GET /products` returns products ordered by name and ID, with their
+variants ordered by ID. Each variant includes size, color, price in
+integer cents, stock quantity, and an optional image URL.
+
+Sold-out variants remain visible with a stock quantity of zero.
+An empty catalog returns an empty list.
+
+Search, filtering, and pagination are not implemented yet.

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from cartiva.backend.catalog import router as catalog_router
 
 app = FastAPI(
     title="Cartiva API",
@@ -6,6 +7,7 @@ app = FastAPI(
     version="0.1.0",
 )
 
+app.include_router(catalog_router)
 
 @app.get("/health", tags=["System"])
 def health_check() -> dict[str, str]:
