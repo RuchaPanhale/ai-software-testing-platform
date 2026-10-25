@@ -1,6 +1,6 @@
 from sqlalchemy import CheckConstraint, UniqueConstraint
 from sqlmodel import Field, SQLModel
-
+from uuid import UUID, uuid4
 
 class Product(SQLModel, table=True):
     __tablename__ = "products"
@@ -58,3 +58,30 @@ class ProductVariant(SQLModel, table=True):
     price_cents: int
     stock_quantity: int = Field(default=0)
     image_url: str | None = Field(default=None, max_length=1000)
+
+
+class Cart(SQLModel, table=True):
+    __tablename__ = "carts"
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+
+
+class CartItem(SQLModel, table=True):
+    __tablename__ = "cart_items"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "cart_id",
+            "variant_id",
+            name="uq_cart_items_cart_variant",
+        ),
+        CheckConstraint(
+            "quantity > 0",
+            name="ck_cart_items_quantity_positive",
+        ),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    cart_id: UUID = Field(foreign_key="carts.id", index=True)
+    variant_id: int = Field(foreign_key="product_variants.id", index=True)
+    quantity: int = Field(gt=0)

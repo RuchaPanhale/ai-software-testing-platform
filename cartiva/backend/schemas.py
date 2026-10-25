@@ -1,6 +1,7 @@
 """Public response formats for the Cartiva API."""
 
 from pydantic import BaseModel, ConfigDict, Field
+from uuid import UUID
 
 
 class ProductVariantRead(BaseModel):
@@ -21,3 +22,7 @@ class ProductRead(BaseModel):
     category: str
     image_url: str | None
     variants: list[ProductVariantRead]
+
+
+class CartCreated(BaseModel):
+    id: UUID

@@ -285,3 +285,46 @@ different variants or match description text.
 Product detail tests verify product fields, variant ordering,
 sold-out visibility, exclusion of unrelated products' variants,
 and HTTP 404 for a missing product.
+
+
+### Cart database permissions
+
+After applying the cart migration, grant the application role access.
+Run from the repository root:
+
+```bash
+docker compose exec postgres psql \
+  -U cartiva_admin \
+  -d cartiva \
+  -v ON_ERROR_STOP=1 \
+  -c "
+BEGIN;
+GRANT SELECT, INSERT ON TABLE public.carts TO cartiva_app;
+GRANT SELECT, INSERT, UPDATE, DELETE
+    ON TABLE public.cart_items TO cartiva_app;
+GRANT USAGE ON SEQUENCE public.cart_items_id_seq TO cartiva_app;
+COMMIT;
+"
+```
+
+Migrations run as `cartiva_admin`; the API connects as `cartiva_app`.
+New tables require appropriate application permissions.
+
+`POST /carts` creates an empty cart and returns HTTP 201 with its UUID.
+Each request creates a new cart.
+
+
+### Run all backend API tests
+
+From the repository root, with the virtual environment activated:
+
+```bash
+python -m pytest cartiva/backend/tests -v
+```
+
+Tests use a shared fixture in `tests/conftest.py`, giving each test
+a fresh in-memory SQLite database.
+
+Cart tests verify that creating a cart returns HTTP 201 with a valid
+UUID, persists an empty cart, and creates distinct carts across requests.
+PostgreSQL permissions are checked separately against the running API.
