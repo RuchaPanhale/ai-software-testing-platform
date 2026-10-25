@@ -271,3 +271,87 @@ def test_catalog_search_and_filters(catalog_environment, params, expected):
 
     if not expected:
         assert products == []
+
+
+def test_product_detail_returns_all_its_variants(catalog_environment):
+    client, engine = catalog_environment
+
+    with Session(engine) as session:
+        shirt = Product(
+            name="Everyday Shirt",
+            description="A cotton shirt.",
+            category="Shirts",
+        )
+        tote = Product(
+            name="Everyday Tote",
+            description="A canvas tote.",
+            category="Accessories",
+        )
+        session.add_all([shirt, tote])
+        session.flush()
+
+        shirt_id = shirt.id
+
+        green = ProductVariant(
+            product_id=shirt_id,
+            size="S",
+            color="Green",
+            price_cents=2999,
+            stock_quantity=8,
+        )
+        ivory = ProductVariant(
+            product_id=shirt_id,
+            size="M",
+            color="Ivory",
+            price_cents=2999,
+            stock_quantity=0,
+        )
+        tote_variant = ProductVariant(
+            product_id=tote.id,
+            size="One Size",
+            color="Ivory",
+            price_cents=1999,
+            stock_quantity=10,
+        )
+        session.add_all([green, ivory, tote_variant])
+        session.flush()
+
+        expected_variant_ids = [green.id, ivory.id]
+        session.commit()
+
+    response = client.get(f"/products/{shirt_id}")
+
+    assert response.status_code == 200
+    product = response.json()
+
+    assert product["id"] == shirt_id
+    assert product["name"] == "Everyday Shirt"
+    assert product["description"] == "A cotton shirt."
+    assert product["category"] == "Shirts"
+    assert product["image_url"] is None
+
+    variants = product["variants"]
+
+    assert [variant["id"] for variant in variants] == expected_variant_ids
+    assert [
+        (
+            variant["size"],
+            variant["color"],
+            variant["price_cents"],
+            variant["stock_quantity"],
+        )
+        for variant in variants
+    ] == [
+        ("S", "Green", 2999, 8),
+        ("M", "Ivory", 2999, 0),
+    ]
+
+
+def test_product_detail_returns_404_for_missing_product(catalog_environment):
+    client, _ = catalog_environment
+
+    # This test starts with an empty database.
+    response = client.get("/products/999")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Product not found"}

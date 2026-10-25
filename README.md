@@ -245,6 +245,16 @@ Example: `/products?q=green%20shirt&category=Shirts`
 
 Pagination is not implemented yet.
 
+#### Product details
+
+`GET /products/{product_id}` returns a single product with all its
+variants ordered by variant ID, including sold-out options.
+
+Example: `/products/1`
+
+A missing product returns HTTP 404 with:
+{"detail": "Product not found"}
+
 
 ### Run catalog API tests
 
@@ -271,3 +281,7 @@ Search tests also cover capitalization, extra whitespace, combined and
 conflicting filters, exact category/color matching, blank inputs, and
 no-result cases. They verify that search does not combine colors from
 different variants or match description text.
+
+Product detail tests verify product fields, variant ordering,
+sold-out visibility, exclusion of unrelated products' variants,
+and HTTP 404 for a missing product.

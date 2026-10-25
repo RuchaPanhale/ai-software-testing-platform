@@ -3,7 +3,7 @@
 from collections import defaultdict
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 
 from cartiva.backend.database import get_session
@@ -100,3 +100,33 @@ def list_products(
         )
 
     return results
+
+@router.get("/{product_id}", response_model=ProductRead)
+def get_product(
+    product_id: int,
+    session: SessionDependency,
+) -> ProductRead:
+    """Return one product with all its variants, or 404 if not found."""
+
+    product = session.get(Product, product_id)
+
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    variants = session.exec(
+        select(ProductVariant)
+        .where(ProductVariant.product_id == product_id)
+        .order_by(ProductVariant.id)
+    ).all()
+
+    return ProductRead(
+        id=product.id,
+        name=product.name,
+        description=product.description,
+        category=product.category,
+        image_url=product.image_url,
+        variants=[
+            ProductVariantRead.model_validate(variant)
+            for variant in variants
+        ],
+    )
