@@ -303,6 +303,7 @@ GRANT SELECT, INSERT ON TABLE public.carts TO cartiva_app;
 GRANT SELECT, INSERT, UPDATE, DELETE
     ON TABLE public.cart_items TO cartiva_app;
 GRANT USAGE ON SEQUENCE public.cart_items_id_seq TO cartiva_app;
+GRANT UPDATE (id) ON TABLE public.carts TO cartiva_app;
 COMMIT;
 "
 ```
@@ -313,6 +314,12 @@ New tables require appropriate application permissions.
 `POST /carts` creates an empty cart and returns HTTP 201 with its UUID.
 Each request creates a new cart.
 
+Adding items locks the parent cart row until the transaction ends,
+serializing simultaneous additions to the same cart. PostgreSQL
+requires an UPDATE privilege for this row lock.
+
+All future endpoints that modify cart contents must follow the same
+locking convention. Adding items does not reserve inventory.
 
 ### Run all backend API tests
 
@@ -328,3 +335,28 @@ a fresh in-memory SQLite database.
 Cart tests verify that creating a cart returns HTTP 201 with a valid
 UUID, persists an empty cart, and creates distinct carts across requests.
 PostgreSQL permissions are checked separately against the running API.
+
+### Add items to a cart
+
+`POST /carts/{cart_id}/items` accepts:
+
+{"variant_id": 1, "quantity": 2}
+
+Adding an existing variant increases its quantity. The combined quantity
+must not exceed available stock. Adding items does not reserve or reduce
+inventory.
+
+Responses:
+- 200: item added or quantity increased.
+- 404: cart or variant not found.
+- 409: requested quantity exceeds available stock.
+- 422: invalid request data.
+
+Automated tests cover quantity accumulation, stock limits, invalid
+quantities, missing resources, sold-out variants, and rejection of
+client-supplied prices.
+
+A manual PostgreSQL concurrency smoke check sent two simultaneous
+requests, each requesting 5 units against stock of 8. One returned 200
+and the other 409. The stored quantity was 5 and stock remained 8.
+SQLite tests do not verify PostgreSQL row-lock behavior.

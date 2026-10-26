@@ -26,3 +26,19 @@ class ProductRead(BaseModel):
 
 class CartCreated(BaseModel):
     id: UUID
+
+
+class CartItemAdd(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    variant_id: int = Field(gt=0, strict=True)
+    quantity: int = Field(gt=0, strict=True)
+
+
+class CartItemRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    cart_id: UUID
+    variant_id: int
+    quantity: int = Field(gt=0)
