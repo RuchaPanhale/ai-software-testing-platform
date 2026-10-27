@@ -42,3 +42,24 @@ class CartItemRead(BaseModel):
     cart_id: UUID
     variant_id: int
     quantity: int = Field(gt=0)
+
+
+class CartItemDetail(BaseModel):
+    id: int
+    variant_id: int
+    product_id: int
+    product_name: str
+    size: str
+    color: str
+    image_url: str | None
+    quantity: int = Field(gt=0)
+    unit_price_cents: int = Field(ge=0)
+    line_total_cents: int = Field(ge=0)
+    stock_quantity: int = Field(ge=0)
+    has_enough_stock: bool
+
+
+class CartRead(BaseModel):
+    id: UUID
+    items: list[CartItemDetail]
+    subtotal_cents: int = Field(ge=0)

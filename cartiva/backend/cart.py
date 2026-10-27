@@ -7,8 +7,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 
 from cartiva.backend.database import get_session
-from cartiva.backend.models import Cart, CartItem, ProductVariant
-from cartiva.backend.schemas import CartCreated, CartItemAdd, CartItemRead
+from cartiva.backend.models import Cart, CartItem, Product, ProductVariant
+
+from cartiva.backend.schemas import (
+    CartCreated,
+    CartItemAdd,
+    CartItemDetail,
+    CartItemRead,
+    CartRead,
+)
 
 
 router = APIRouter(prefix="/carts", tags=["Cart"])
@@ -87,3 +94,59 @@ def add_cart_item(
     session.refresh(item)
 
     return CartItemRead.model_validate(item)
+
+@router.get("/{cart_id}", response_model=CartRead)
+def get_cart(
+    cart_id: UUID,
+    session: SessionDependency,
+) -> CartRead:
+    """Return cart contents with current prices and calculated totals."""
+
+    cart = session.get(Cart, cart_id)
+
+    if cart is None:
+        raise HTTPException(status_code=404, detail="Cart not found")
+
+    rows = session.exec(
+        select(CartItem, ProductVariant, Product)
+        .join(
+            ProductVariant,
+            CartItem.variant_id == ProductVariant.id,
+        )
+        .join(
+            Product,
+            ProductVariant.product_id == Product.id,
+        )
+        .where(CartItem.cart_id == cart_id)
+        .order_by(CartItem.id)
+    ).all()
+
+    items: list[CartItemDetail] = []
+
+    for item, variant, product in rows:
+        items.append(
+            CartItemDetail(
+                id=item.id,
+                variant_id=variant.id,
+                product_id=product.id,
+                product_name=product.name,
+                size=variant.size,
+                color=variant.color,
+                image_url=(
+                    variant.image_url
+                    if variant.image_url is not None
+                    else product.image_url
+                ),
+                quantity=item.quantity,
+                unit_price_cents=variant.price_cents,
+                line_total_cents=variant.price_cents * item.quantity,
+                stock_quantity=variant.stock_quantity,
+                has_enough_stock=item.quantity <= variant.stock_quantity,
+            )
+        )
+
+    return CartRead(
+        id=cart.id,
+        items=items,
+        subtotal_cents=sum(item.line_total_cents for item in items),
+    )

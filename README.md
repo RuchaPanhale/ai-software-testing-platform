@@ -360,3 +360,22 @@ A manual PostgreSQL concurrency smoke check sent two simultaneous
 requests, each requesting 5 units against stock of 8. One returned 200
 and the other 409. The stored quantity was 5 and stock remained 8.
 SQLite tests do not verify PostgreSQL row-lock behavior.
+
+### View a cart
+
+`GET /carts/{cart_id}` returns cart items ordered by item ID, with
+product details, current variant prices, line totals, and a subtotal.
+
+All monetary values use integer cents. Each line total equals the
+current unit price multiplied by quantity. The subtotal excludes
+discounts, shipping, and tax.
+
+An empty cart returns an empty items list and subtotal zero.
+A missing cart returns HTTP 404.
+
+Items with insufficient stock remain visible with
+`has_enough_stock: false`. Viewing a cart does not modify quantities
+or inventory. Stock and prices must be checked again at checkout.
+
+Tests cover empty and missing carts, item details, current prices,
+reduced stock, multiple-item totals, and separation between carts.
