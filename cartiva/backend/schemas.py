@@ -63,3 +63,8 @@ class CartRead(BaseModel):
     id: UUID
     items: list[CartItemDetail]
     subtotal_cents: int = Field(ge=0)
+
+class CartItemUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    quantity: int = Field(gt=0, strict=True)

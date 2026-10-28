@@ -379,3 +379,29 @@ or inventory. Stock and prices must be checked again at checkout.
 
 Tests cover empty and missing carts, item details, current prices,
 reduced stock, multiple-item totals, and separation between carts.
+
+### Update a cart item
+
+`PATCH /carts/{cart_id}/items/{item_id}` accepts:
+
+{"quantity": 3}
+
+This sets the quantity rather than adding to it. Quantity must be a
+positive integer and cannot exceed current stock. Repeating the same
+update leaves the quantity unchanged.
+
+### Remove a cart item
+
+`DELETE /carts/{cart_id}/items/{item_id}` removes the specified item
+and returns HTTP 204 with no response body. The cart remains available.
+
+Both endpoints verify that the item belongs to the specified cart
+and lock the parent cart during changes. Missing carts or items
+return HTTP 404. Updating and removing do not change inventory.
+
+Automated tests cover quantity changes, recalculated totals, rejected
+updates, missing resources, cross-cart item checks, and removal.
+
+A PostgreSQL smoke check verified adding, updating, viewing, and
+removing an item. The final cart was empty with subtotal zero, and
+inventory remained unchanged.

@@ -458,3 +458,266 @@ def test_get_cart_totals_multiple_items_and_excludes_other_carts(
     assert other_body["items"][0]["variant_id"] == shirt_variant_id
     assert other_body["items"][0]["quantity"] == 1
     assert other_body["subtotal_cents"] == 2999
+
+def test_update_cart_item_sets_quantity_and_recalculates_total(
+    cart_with_variant,
+):
+    client, engine, cart_id, variant_id = cart_with_variant
+
+    added = client.post(
+        f"/carts/{cart_id}/items",
+        json={"variant_id": variant_id, "quantity": 2},
+    )
+    assert added.status_code == 200
+    item_id = added.json()["id"]
+
+    url = f"/carts/{cart_id}/items/{item_id}"
+
+    # Set to three; do not add three to the existing two.
+    response = client.patch(url, json={"quantity": 3})
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": item_id,
+        "cart_id": str(cart_id),
+        "variant_id": variant_id,
+        "quantity": 3,
+    }
+
+    # Repeating the same update must leave the quantity at three.
+    repeated = client.patch(url, json={"quantity": 3})
+    assert repeated.status_code == 200
+    assert repeated.json()["quantity"] == 3
+
+    cart_response = client.get(f"/carts/{cart_id}")
+    assert cart_response.status_code == 200
+    assert cart_response.json()["subtotal_cents"] == 8997
+
+    # Decreasing the quantity must work too.
+    decreased = client.patch(url, json={"quantity": 1})
+    assert decreased.status_code == 200
+    assert decreased.json()["quantity"] == 1
+
+    cart_response = client.get(f"/carts/{cart_id}")
+    assert cart_response.status_code == 200
+    assert cart_response.json()["subtotal_cents"] == 2999
+
+    with Session(engine) as session:
+        saved_item = session.get(CartItem, item_id)
+        variant = session.get(ProductVariant, variant_id)
+
+        assert saved_item.quantity == 1
+        assert variant.stock_quantity == 8
+
+@pytest.mark.parametrize(
+    "payload, expected_status",
+    [
+        ({"quantity": 0}, 422),
+        ({"quantity": -1}, 422),
+        ({"quantity": 1.5}, 422),
+        ({"quantity": "2"}, 422),
+        ({"quantity": True}, 422),
+        ({"quantity": None}, 422),
+        ({}, 422),
+        ({"quantity": 2, "price_cents": 1}, 422),
+        ({"quantity": 9}, 409),
+    ],
+    ids=[
+        "zero",
+        "negative",
+        "fraction",
+        "numeric-string",
+        "boolean",
+        "null",
+        "missing-quantity",
+        "unexpected-price",
+        "exceeds-stock",
+    ],
+)
+def test_rejected_cart_update_leaves_item_unchanged(
+    cart_with_variant, payload, expected_status
+):
+    client, engine, cart_id, variant_id = cart_with_variant
+
+    added = client.post(
+        f"/carts/{cart_id}/items",
+        json={"variant_id": variant_id, "quantity": 2},
+    )
+    assert added.status_code == 200
+    item_id = added.json()["id"]
+
+    response = client.patch(
+        f"/carts/{cart_id}/items/{item_id}",
+        json=payload,
+    )
+
+    assert response.status_code == expected_status
+
+    if expected_status == 409:
+        assert response.json() == {
+            "detail": "Requested quantity exceeds available stock"
+        }
+
+    with Session(engine) as session:
+        item = session.get(CartItem, item_id)
+        variant = session.get(ProductVariant, variant_id)
+
+        assert item.quantity == 2
+        assert variant.stock_quantity == 8
+        assert variant.price_cents == 2999
+
+
+def test_update_rejects_item_from_another_cart(cart_with_variant):
+    client, engine, cart_id, variant_id = cart_with_variant
+
+    added = client.post(
+        f"/carts/{cart_id}/items",
+        json={"variant_id": variant_id, "quantity": 2},
+    )
+    assert added.status_code == 200
+    item_id = added.json()["id"]
+
+    other_cart = client.post("/carts")
+    assert other_cart.status_code == 201
+    other_cart_id = other_cart.json()["id"]
+
+    response = client.patch(
+        f"/carts/{other_cart_id}/items/{item_id}",
+        json={"quantity": 3},
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Cart item not found"}
+
+    with Session(engine) as session:
+        item = session.get(CartItem, item_id)
+
+        assert item.cart_id == cart_id
+        assert item.quantity == 2
+
+        other_items = session.exec(
+            select(CartItem).where(
+                CartItem.cart_id == UUID(other_cart_id)
+            )
+        ).all()
+        assert other_items == []
+
+
+def test_update_rejects_missing_cart(cart_with_variant):
+    client, engine, cart_id, variant_id = cart_with_variant
+
+    added = client.post(
+        f"/carts/{cart_id}/items",
+        json={"variant_id": variant_id, "quantity": 2},
+    )
+    assert added.status_code == 200
+    item_id = added.json()["id"]
+
+    response = client.patch(
+        f"/carts/{uuid4()}/items/{item_id}",
+        json={"quantity": 3},
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Cart not found"}
+
+    with Session(engine) as session:
+        assert session.get(CartItem, item_id).quantity == 2
+
+
+def test_update_rejects_missing_item(cart_with_variant):
+    client, engine, cart_id, _ = cart_with_variant
+
+    # This fixture starts with an empty cart and no cart items.
+    response = client.patch(
+        f"/carts/{cart_id}/items/999",
+        json={"quantity": 3},
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Cart item not found"}
+
+    with Session(engine) as session:
+        assert session.exec(select(CartItem)).all() == []
+
+def test_remove_cart_item_leaves_empty_cart_and_unchanged_stock(
+    cart_with_variant,
+):
+    client, engine, cart_id, variant_id = cart_with_variant
+
+    added = client.post(
+        f"/carts/{cart_id}/items",
+        json={"variant_id": variant_id, "quantity": 2},
+    )
+    assert added.status_code == 200
+    item_id = added.json()["id"]
+
+    response = client.delete(f"/carts/{cart_id}/items/{item_id}")
+
+    assert response.status_code == 204
+    assert response.content == b""
+
+    cart_response = client.get(f"/carts/{cart_id}")
+    assert cart_response.status_code == 200
+    assert cart_response.json() == {
+        "id": str(cart_id),
+        "items": [],
+        "subtotal_cents": 0,
+    }
+
+    with Session(engine) as session:
+        assert session.get(CartItem, item_id) is None
+        assert session.get(Cart, cart_id) is not None
+        assert session.get(ProductVariant, variant_id).stock_quantity == 8
+
+    # The item no longer exists.
+    repeated = client.delete(f"/carts/{cart_id}/items/{item_id}")
+    assert repeated.status_code == 404
+    assert repeated.json() == {"detail": "Cart item not found"}
+
+
+def test_remove_rejects_item_from_another_cart(cart_with_variant):
+    client, engine, cart_id, variant_id = cart_with_variant
+
+    added = client.post(
+        f"/carts/{cart_id}/items",
+        json={"variant_id": variant_id, "quantity": 2},
+    )
+    assert added.status_code == 200
+    item_id = added.json()["id"]
+
+    other_cart = client.post("/carts")
+    assert other_cart.status_code == 201
+    other_cart_id = other_cart.json()["id"]
+
+    response = client.delete(
+        f"/carts/{other_cart_id}/items/{item_id}"
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Cart item not found"}
+
+    with Session(engine) as session:
+        item = session.get(CartItem, item_id)
+        assert item is not None
+        assert item.cart_id == cart_id
+        assert item.quantity == 2
+
+
+def test_remove_rejects_missing_cart(cart_with_variant):
+    client, engine, cart_id, variant_id = cart_with_variant
+
+    added = client.post(
+        f"/carts/{cart_id}/items",
+        json={"variant_id": variant_id, "quantity": 2},
+    )
+    assert added.status_code == 200
+    item_id = added.json()["id"]
+
+    response = client.delete(f"/carts/{uuid4()}/items/{item_id}")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Cart not found"}
+
+    with Session(engine) as session:
+        assert session.get(CartItem, item_id) is not None
