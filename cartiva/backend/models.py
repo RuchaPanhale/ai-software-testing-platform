@@ -1,6 +1,7 @@
-from sqlalchemy import CheckConstraint, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, DateTime, UniqueConstraint
 from sqlmodel import Field, SQLModel
 from uuid import UUID, uuid4
+from datetime import datetime, timezone
 
 class Product(SQLModel, table=True):
     __tablename__ = "products"
@@ -85,3 +86,62 @@ class CartItem(SQLModel, table=True):
     cart_id: UUID = Field(foreign_key="carts.id", index=True)
     variant_id: int = Field(foreign_key="product_variants.id", index=True)
     quantity: int = Field(gt=0)
+
+
+class Order(SQLModel, table=True):
+    __tablename__ = "orders"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "cart_id",
+            name="uq_orders_cart_id",
+        ),
+        CheckConstraint(
+            "subtotal_cents >= 0",
+            name="ck_orders_subtotal_nonnegative",
+        ),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    cart_id: UUID = Field(foreign_key="carts.id")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+    subtotal_cents: int = Field(ge=0)
+
+
+class OrderItem(SQLModel, table=True):
+    __tablename__ = "order_items"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "order_id",
+            "variant_id",
+            name="uq_order_items_order_variant",
+        ),
+        CheckConstraint(
+            "quantity > 0",
+            name="ck_order_items_quantity_positive",
+        ),
+        CheckConstraint(
+            "unit_price_cents >= 0",
+            name="ck_order_items_price_nonnegative",
+        ),
+        CheckConstraint(
+            "line_total_cents = unit_price_cents * quantity",
+            name="ck_order_items_line_total_matches",
+        ),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    order_id: UUID = Field(foreign_key="orders.id", index=True)
+    variant_id: int = Field(foreign_key="product_variants.id", index=True)
+
+    # Snapshot fields preserve what was purchased.
+    product_name: str = Field(max_length=150)
+    size: str = Field(max_length=30)
+    color: str = Field(max_length=50)
+    quantity: int = Field(gt=0)
+    unit_price_cents: int = Field(ge=0)
+    line_total_cents: int = Field(ge=0)

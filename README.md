@@ -405,3 +405,40 @@ updates, missing resources, cross-cart item checks, and removal.
 A PostgreSQL smoke check verified adding, updating, viewing, and
 removing an item. The final cart was empty with subtotal zero, and
 inventory remained unchanged.
+
+### Order database permissions
+
+After applying the order migration, run:
+
+```bash
+docker compose exec postgres psql \
+  -U cartiva_admin \
+  -d cartiva \
+  -v ON_ERROR_STOP=1 \
+  -c "
+BEGIN;
+GRANT SELECT, INSERT
+    ON TABLE public.orders, public.order_items TO cartiva_app;
+GRANT USAGE
+    ON SEQUENCE public.order_items_id_seq TO cartiva_app;
+COMMIT;
+"
+```
+
+Order items preserve product names, sizes, colors, quantities, and
+purchase prices. A unique constraint allows only one order per cart.
+
+
+### Checked-out carts
+
+A cart is considered checked out when an order references it.
+
+Adding, updating, or removing items from that cart returns HTTP 409
+with "Cart has already been checked out". Viewing it remains allowed.
+
+All three modification endpoints use a shared helper that locks the
+cart before checking for an existing order. Tests verify that rejected
+changes preserve cart contents and inventory.
+
+Order tables and cart guards are implemented. The checkout endpoint
+and inventory deduction are not implemented yet.

@@ -5,7 +5,13 @@ from uuid import UUID, uuid4
 import pytest
 from sqlmodel import Session, select
 
-from cartiva.backend.models import Cart, CartItem, Product, ProductVariant
+from cartiva.backend.models import (
+    Cart,
+    CartItem,
+    Order,
+    Product,
+    ProductVariant,
+)
 
 
 def test_create_cart_persists_empty_cart(catalog_environment):
@@ -721,3 +727,60 @@ def test_remove_rejects_missing_cart(cart_with_variant):
 
     with Session(engine) as session:
         assert session.get(CartItem, item_id) is not None
+
+
+@pytest.mark.parametrize("operation", ["add", "update", "remove"])
+def test_checked_out_cart_rejects_changes(
+    cart_with_variant, operation
+):
+    client, engine, cart_id, variant_id = cart_with_variant
+
+    added = client.post(
+        f"/carts/{cart_id}/items",
+        json={"variant_id": variant_id, "quantity": 2},
+    )
+    assert added.status_code == 200
+    item_id = added.json()["id"]
+
+    # Create the order-exists condition for this guard test.
+    with Session(engine) as session:
+        order = Order(cart_id=cart_id, subtotal_cents=5998)
+        session.add(order)
+        session.commit()
+
+    if operation == "add":
+        response = client.post(
+            f"/carts/{cart_id}/items",
+            json={"variant_id": variant_id, "quantity": 1},
+        )
+    elif operation == "update":
+        response = client.patch(
+            f"/carts/{cart_id}/items/{item_id}",
+            json={"quantity": 3},
+        )
+    else:
+        response = client.delete(
+            f"/carts/{cart_id}/items/{item_id}"
+        )
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": "Cart has already been checked out"
+    }
+
+    with Session(engine) as session:
+        items = session.exec(
+            select(CartItem).where(CartItem.cart_id == cart_id)
+        ).all()
+
+        assert len(items) == 1
+        assert items[0].id == item_id
+        assert items[0].quantity == 2
+
+        variant = session.get(ProductVariant, variant_id)
+        assert variant.stock_quantity == 8
+
+    # Viewing the cart remains allowed.
+    viewed = client.get(f"/carts/{cart_id}")
+    assert viewed.status_code == 200
+    assert viewed.json()["subtotal_cents"] == 5998

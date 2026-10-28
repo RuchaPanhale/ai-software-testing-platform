@@ -7,8 +7,13 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlmodel import Session, select
 
 from cartiva.backend.database import get_session
-from cartiva.backend.models import Cart, CartItem, Product, ProductVariant
-
+from cartiva.backend.models import (
+    Cart,
+    CartItem,
+    Order,
+    Product,
+    ProductVariant,
+)
 from cartiva.backend.schemas import (
     CartCreated,
     CartItemAdd,
@@ -22,6 +27,34 @@ from cartiva.backend.schemas import (
 router = APIRouter(prefix="/carts", tags=["Cart"])
 
 SessionDependency = Annotated[Session, Depends(get_session)]
+
+
+def get_editable_cart(
+    cart_id: UUID,
+    session: Session,
+) -> Cart:
+    """Lock the cart and reject changes if it already has an order."""
+
+    cart = session.exec(
+        select(Cart)
+        .where(Cart.id == cart_id)
+        .with_for_update()
+    ).first()
+
+    if cart is None:
+        raise HTTPException(status_code=404, detail="Cart not found")
+
+    order = session.exec(
+        select(Order).where(Order.cart_id == cart_id)
+    ).first()
+
+    if order is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Cart has already been checked out",
+        )
+
+    return cart
 
 
 @router.post(
@@ -48,22 +81,15 @@ def add_cart_item(
 ) -> CartItemRead:
     """Add a variant or increase its existing quantity."""
 
-    #cart = session.get(Cart, cart_id)
-
-    # Serialize changes to this cart until the transaction finishes.
-    cart = session.exec(
-        select(Cart)
-        .where(Cart.id == cart_id)
-        .with_for_update()
-    ).first()
-
-    if cart is None:
-        raise HTTPException(status_code=404, detail="Cart not found")
+    get_editable_cart(cart_id, session)
 
     variant = session.get(ProductVariant, payload.variant_id)
 
     if variant is None:
-        raise HTTPException(status_code=404, detail="Product variant not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Product variant not found",
+        )
 
     item = session.exec(
         select(CartItem).where(
@@ -95,6 +121,7 @@ def add_cart_item(
     session.refresh(item)
 
     return CartItemRead.model_validate(item)
+
 
 @router.get("/{cart_id}", response_model=CartRead)
 def get_cart(
@@ -162,15 +189,7 @@ def update_cart_item(
 ) -> CartItemRead:
     """Set a cart item's quantity after checking available stock."""
 
-    # Use the same parent-cart lock as the add-item endpoint.
-    cart = session.exec(
-        select(Cart)
-        .where(Cart.id == cart_id)
-        .with_for_update()
-    ).first()
-
-    if cart is None:
-        raise HTTPException(status_code=404, detail="Cart not found")
+    get_editable_cart(cart_id, session)
 
     item = session.exec(
         select(CartItem).where(
@@ -180,12 +199,18 @@ def update_cart_item(
     ).first()
 
     if item is None:
-        raise HTTPException(status_code=404, detail="Cart item not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Cart item not found",
+        )
 
     variant = session.get(ProductVariant, item.variant_id)
 
     if variant is None:
-        raise HTTPException(status_code=404, detail="Product variant not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Product variant not found",
+        )
 
     if payload.quantity > variant.stock_quantity:
         raise HTTPException(
@@ -200,6 +225,7 @@ def update_cart_item(
 
     return CartItemRead.model_validate(item)
 
+
 @router.delete(
     "/{cart_id}/items/{item_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -212,14 +238,7 @@ def remove_cart_item(
 ) -> Response:
     """Remove an item belonging to the specified cart."""
 
-    cart = session.exec(
-        select(Cart)
-        .where(Cart.id == cart_id)
-        .with_for_update()
-    ).first()
-
-    if cart is None:
-        raise HTTPException(status_code=404, detail="Cart not found")
+    get_editable_cart(cart_id, session)
 
     item = session.exec(
         select(CartItem).where(
@@ -229,7 +248,10 @@ def remove_cart_item(
     ).first()
 
     if item is None:
-        raise HTTPException(status_code=404, detail="Cart item not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Cart item not found",
+        )
 
     session.delete(item)
     session.commit()
