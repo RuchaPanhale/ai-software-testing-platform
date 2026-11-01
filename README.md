@@ -1,5 +1,41 @@
 # AI Software Testing & Regression Platform
 
+[![Backend CI](https://github.com/RuchaPanhale/ai-software-testing-platform/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/RuchaPanhale/ai-software-testing-platform/actions/workflows/tests.yml)
+
+An ongoing portfolio project building Cartiva, a tested e-commerce
+backend, as the first application for a planned AI-assisted regression
+testing platform.
+
+## Current status
+
+Implemented:
+- FastAPI product catalog, search, filtering, and product details.
+- Cart creation, item additions, quantity updates, and removal.
+- Server-calculated prices and totals using integer cents.
+- Stock validation and PostgreSQL row-level locking for cart changes.
+- Order tables and protection against modifying checked-out carts.
+- 55 automated pytest API test cases.
+- GitHub Actions for PostgreSQL migrations, schema-drift checks,
+  and API tests, with downloadable JUnit XML reports.
+
+Planned:
+- Checkout transactions and inventory deduction.
+- Regression comparison across baseline and intentionally buggy versions.
+- LLM-assisted test proposals with schema validation and human approval.
+- A testing dashboard and React storefront.
+
+## Verification scope
+
+CI applies migrations to a fresh PostgreSQL database and checks for
+schema drift. API tests use isolated in-memory SQLite databases.
+
+A separate local PostgreSQL smoke check sent two simultaneous additions
+to the same cart, each requesting 5 units against stock of 8. One
+succeeded, one was rejected, and the stored quantity remained 5.
+
+This verifies the tested cart behavior; checkout inventory deduction
+and competing purchases across different carts are not implemented yet.
+
 An AI-assisted, multi-application software quality platform.
 
 MS Computer Science termination project at Binghamton University.
