@@ -27,3 +27,5 @@ test-results/
 
 # macOS
 .DS_Store
+
+/reports/regression-demo/

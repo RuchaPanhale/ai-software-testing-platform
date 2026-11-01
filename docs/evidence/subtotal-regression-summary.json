@@ -1,0 +1,20 @@
+{
+  "baseline_commit": "ef3acb4db66df4e0c12bb306423e6a2b46fb98a8",
+  "defect": "Cart subtotal ignores item quantities",
+  "original_expression": "subtotal_cents=sum(item.line_total_cents for item in items)",
+  "faulty_expression": "subtotal_cents=sum(item.unit_price_cents for item in items)",
+  "baseline_passed": 55,
+  "candidate_passed": 48,
+  "candidate_failed": 7,
+  "newly_failing_tests": [
+    "cartiva.backend.tests.test_cart::test_checked_out_cart_rejects_changes[add]",
+    "cartiva.backend.tests.test_cart::test_checked_out_cart_rejects_changes[remove]",
+    "cartiva.backend.tests.test_cart::test_checked_out_cart_rejects_changes[update]",
+    "cartiva.backend.tests.test_cart::test_get_cart_returns_details_and_totals",
+    "cartiva.backend.tests.test_cart::test_get_cart_totals_multiple_items_and_excludes_other_carts",
+    "cartiva.backend.tests.test_cart::test_get_cart_uses_current_price_and_flags_low_stock",
+    "cartiva.backend.tests.test_cart::test_update_cart_item_sets_quantity_and_recalculates_total"
+  ],
+  "injected_defects": 1,
+  "detected_defects": 1
+}

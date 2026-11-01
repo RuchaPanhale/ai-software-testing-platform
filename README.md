@@ -478,3 +478,37 @@ changes preserve cart contents and inventory.
 
 Order tables and cart guards are implemented. The checkout endpoint
 and inventory deduction are not implemented yet.
+
+## Controlled regression experiment
+
+Run from the repository root with the virtual environment activated:
+
+```bash
+python scripts/regression_demo.py
+```
+
+The script creates temporary copies of the committed code and runs
+the same API tests against:
+- The unchanged baseline.
+- A candidate with one deliberate defect: the cart subtotal sums unit
+  prices instead of quantity-adjusted line totals.
+
+The working application and development database are not modified.
+Tests use isolated SQLite databases. Logs, JUnit XML reports, and a
+JSON comparison summary are saved under `reports/regression-demo/`.
+
+### Verified result
+
+Baseline commit: `ef3acb4db66df4e0c12bb306423e6a2b46fb98a8`
+
+| Version | Passed | Failed |
+|---|---:|---:|
+| Baseline | 55 | 0 |
+| Faulty candidate | 48 | 7 |
+
+One deliberately injected subtotal defect was detected by seven test
+cases. For example, a two-item cart returned 2999 cents instead of
+the expected 5998 cents.
+
+This is a controlled defect-detection demonstration, not a general
+defect-detection accuracy measurement or a completed AI testing platform.
