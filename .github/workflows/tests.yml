@@ -1,0 +1,82 @@
+name: Backend CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    name: PostgreSQL migrations and API tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cartiva_admin
+          POSTGRES_PASSWORD: ci_only_password
+          POSTGRES_DB: cartiva_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cartiva_admin -d cartiva_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      POSTGRES_USER: cartiva_admin
+      POSTGRES_PASSWORD: ci_only_password
+      CARTIVA_DB_HOST: "127.0.0.1"
+      CARTIVA_DB_PORT: "5432"
+      CARTIVA_DB_NAME: cartiva_ci
+      CARTIVA_DB_USER: cartiva_admin
+      CARTIVA_DB_PASSWORD: ci_only_password
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: cartiva/backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r cartiva/backend/requirements.txt
+          python -m pip check
+
+      - name: Apply PostgreSQL migrations
+        run: |
+          python -m alembic -c cartiva/backend/alembic.ini upgrade head
+          python -m alembic -c cartiva/backend/alembic.ini current
+
+      - name: Check for schema drift
+        run: python -m alembic -c cartiva/backend/alembic.ini check
+
+      - name: Run isolated API tests
+        run: |
+          mkdir -p test-results
+          python -m pytest cartiva/backend/tests -v --junitxml=test-results/pytest.xml
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-results
+          path: test-results/pytest.xml
+          if-no-files-found: warn
+          retention-days: 14
