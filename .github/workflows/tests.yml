@@ -59,6 +59,26 @@ jobs:
           python -m pip install -r cartiva/backend/requirements.txt
           python -m pip check
 
+      - name: Create application database role
+        run: |
+          python - <<'PY'
+          import os
+          import psycopg
+
+          with psycopg.connect(
+              host=os.environ["CARTIVA_DB_HOST"],
+              port=int(os.environ["CARTIVA_DB_PORT"]),
+              dbname=os.environ["CARTIVA_DB_NAME"],
+              user=os.environ["POSTGRES_USER"],
+              password=os.environ["POSTGRES_PASSWORD"],
+          ) as connection:
+              connection.execute(
+                  "CREATE ROLE cartiva_app LOGIN PASSWORD 'ci_app_only_password'"
+              )
+
+          print("Created cartiva_app role for the temporary CI database.")
+          PY
+
       - name: Apply PostgreSQL migrations
         run: |
           python -m alembic -c cartiva/backend/alembic.ini upgrade head
