@@ -18,7 +18,7 @@ The same seed (`2025` by default) always produces exactly the same data.
 | Period | 2024-01-01 to 2025-12-31 | Two years allow year-over-year comparisons and two holiday seasons |
 | Customers | 8,000 | Large enough for stable rates, small enough for Tableau Public |
 | Store launch | January 2024 | The customer base starts at zero, so 2024 shows a growing new store |
-| Catalog | 32 products, 77 variants, 8 categories | Shared with the app via `cartiva/catalog_data.py` |
+| Catalog | 36 products, 87 variants, 9 categories | Shared with the app via `cartiva/catalog_data.py` |
 | Customer location | 15 US states, weighted toward large states | US shipping only (CART-007) |
 
 ## Traffic
@@ -38,7 +38,7 @@ The same seed (`2025` by default) always produces exactly the same data.
 
 | Step | Base probability | Adjustments |
 |---|---|---|
-| Products viewed per session | 1–6 (2 most common) | Category popularity: Tops 1.4, Shirts 1.2, Jeans 1.2, Accessories 1.1, Dresses 1.0, Shoes 1.0, Knitwear 0.8, Outerwear 0.7 |
+| Products viewed per session | 1–6 (2 most common) | Category popularity: Tops 1.4, Shirts 1.2, Jeans 1.2, Accessories 1.1, Dresses 1.0, Shoes 1.0, Skirts 0.9, Knitwear 0.8, Outerwear 0.7 |
 | Add to cart, per product viewed | 12% | ×1.30 on sale days. Sold-out variants are never added. |
 | Quantity | 1 (88%) or 2 (12%) | |
 | Start checkout, if the cart is not empty | 55% | |

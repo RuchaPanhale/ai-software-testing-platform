@@ -172,8 +172,19 @@ New tables need their own grants.
 python -m cartiva.backend.seed
 ```
 
-On an empty catalog, this creates three sample products and eight variants,
-including a sold-out variant for inventory testing.
+On an empty catalog, this creates the 36 products and 87 variants defined in
+`cartiva/catalog_data.py` (the same catalog the synthetic dataset uses),
+including sold-out variants for inventory testing.
+
+To replace an older catalog, empty the app's tables first. This deletes all
+local products, carts and orders in the `public` schema (not the analytics
+data), and restarts the IDs at 1:
+
+```bash
+docker compose exec postgres psql -U cartiva_admin -d cartiva -c \
+  "TRUNCATE order_items, orders, cart_items, carts, product_variants, products RESTART IDENTITY;"
+python -m cartiva.backend.seed
+```
 
 The script uses administrator credentials from `.env` for this setup
 operation; the API continues using its restricted role. All inserts run in
@@ -181,19 +192,34 @@ one transaction. If either catalog table already contains data, the script
 skips initialization without changing existing records. It does not reset
 inventory or synchronize catalog updates. Run it once at a time.
 
-## 8. Run the API
+## 8. Run the API and the store
 
 ```bash
 python -m uvicorn cartiva.backend.main:app --reload
 ```
 
-- Catalog: http://127.0.0.1:8000/products
+- Storefront: http://127.0.0.1:8000/shop/ (http://127.0.0.1:8000/ redirects there)
+- Catalog JSON: http://127.0.0.1:8000/products
 - Interactive API documentation: http://127.0.0.1:8000/docs
+
+Product photos go in `cartiva/storefront/images/`; see the README there for
+file names and an image prompt template.
+
+## 8b. Load the synthetic shop dataset
+
+```bash
+python -m analytics.generate_data   # only needed after changing assumptions
+bash analytics/load_data.sh
+```
+
+This recreates the `analytics` schema, loads the CSVs from `analytics/data/`
+and grants read-only access to `cartiva_app`. For SQL practice, connect a SQL
+client (e.g. DBeaver) to 127.0.0.1:5433, database `cartiva`, user `cartiva_app`.
 
 ## 9. Run the tests
 
 ```bash
-python -m pytest cartiva/backend/tests -v
+python -m pytest cartiva/backend/tests analytics/tests -q
 ```
 
 Tests use a shared fixture in `tests/conftest.py` that gives each test a

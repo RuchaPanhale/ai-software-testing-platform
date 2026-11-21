@@ -6,6 +6,7 @@ from sqlmodel import Session, create_engine, select
 
 from cartiva.backend.config import PROJECT_ROOT, get_settings
 from cartiva.backend.models import Product, ProductVariant
+from cartiva.catalog_data import CATALOG
 
 
 class SeedCredentials(BaseSettings):
@@ -20,40 +21,6 @@ class SeedCredentials(BaseSettings):
 
     username: str = Field(validation_alias="POSTGRES_USER")
     password: SecretStr = Field(validation_alias="POSTGRES_PASSWORD")
-
-
-CATALOG = [
-    {
-        "name": "Everyday Shirt",
-        "description": "A comfortable cotton shirt for everyday wear.",
-        "category": "Shirts",
-        # Each tuple contains size, color, price in cents, and stock.
-        "variants": [
-            ("S", "Green", 2999, 8),
-            ("M", "Green", 2999, 0),
-            ("L", "Green", 2999, 5),
-            ("M", "Ivory", 2999, 6),
-        ],
-    },
-    {
-        "name": "Straight-Leg Jeans",
-        "description": "Classic straight-leg denim with a clean finish.",
-        "category": "Jeans",
-        "variants": [
-            ("28", "Black", 5999, 4),
-            ("30", "Black", 5999, 7),
-            ("30", "Blue", 5999, 3),
-        ],
-    },
-    {
-        "name": "Everyday Tote",
-        "description": "A simple canvas tote for daily essentials.",
-        "category": "Accessories",
-        "variants": [
-            ("One Size", "Ivory", 1999, 10),
-        ],
-    },
-]
 
 
 def seed_catalog() -> None:

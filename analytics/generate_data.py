@@ -71,8 +71,8 @@ STATES = {"CA": 0.16, "NY": 0.12, "TX": 0.11, "FL": 0.09, "IL": 0.06,
 
 # How often each category is browsed, relative to 1.0.
 CATEGORY_POPULARITY = {"Tops": 1.4, "Shirts": 1.2, "Jeans": 1.2,
-                       "Dresses": 1.0, "Shoes": 1.0, "Accessories": 1.1,
-                       "Knitwear": 0.8, "Outerwear": 0.7}
+                       "Dresses": 1.0, "Skirts": 0.9, "Shoes": 1.0,
+                       "Accessories": 1.1, "Knitwear": 0.8, "Outerwear": 0.7}
 
 P_RETURN_VISIT = 0.70               # chance of each additional session
 RETURN_WINDOW_DAYS = 90             # a return visit is within 90 days

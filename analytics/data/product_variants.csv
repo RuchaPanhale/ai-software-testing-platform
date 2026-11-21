@@ -30,49 +30,59 @@ variant_id,product_id,size,color,price_cents
 29,11,M,Grey,8999
 30,12,S,White,6499
 31,12,M,Khaki,6499
-32,13,28,Black,5999
-33,13,30,Black,5999
-34,13,30,Blue,5999
-35,14,26,Light Blue,6999
-36,14,28,Light Blue,6999
-37,14,30,Indigo,6999
-38,15,30,Indigo,5499
-39,15,32,Grey,5499
-40,16,30,Ecru,6499
-41,16,32,Blue,6499
-42,17,S,Navy,7999
-43,17,M,Oatmeal,7999
-44,17,L,Burgundy,7999
-45,18,S,Cream,8999
-46,18,M,Brown,8999
-47,19,S,Black,11999
-48,19,M,Camel,11999
-49,20,S,Camel,18999
-50,20,M,Black,18999
-51,20,L,Charcoal,18999
-52,21,S,Black,12999
-53,21,M,Silver,12999
-54,22,S,Beige,15999
-55,22,M,Beige,15999
-56,23,S,Blue,7999
-57,23,M,Blue,7999
-58,23,L,Black,7999
-59,24,7,Black,12999
-60,24,8,Black,12999
-61,24,8,Brown,12999
-62,25,7,White,5499
-63,25,8,White,5499
-64,25,9,Black,5499
-65,26,7,Tan,4999
-66,26,8,Black,4999
-67,27,7,Taupe,9999
-68,27,8,Taupe,9999
-69,28,One Size,Ivory,1999
-70,29,One Size,Black,8999
-71,29,One Size,Cognac,8999
-72,30,One Size,Navy Print,3499
-73,30,One Size,Rust Print,3499
-74,31,One Size,Grey,2499
-75,31,One Size,Black,2499
-76,32,S,Brown,3999
-77,32,M,Black,3999
+32,13,XS,Black,5499
+33,13,S,Black,5499
+34,13,M,Sage,5499
+35,14,26,Blue,3999
+36,14,28,Blue,3999
+37,14,28,Black,3999
+38,15,28,Black,5999
+39,15,30,Black,5999
+40,15,30,Blue,5999
+41,16,26,Light Blue,6999
+42,16,28,Light Blue,6999
+43,16,30,Indigo,6999
+44,17,30,Indigo,5499
+45,17,32,Grey,5499
+46,18,30,Ecru,6499
+47,18,32,Blue,6499
+48,19,S,Navy,7999
+49,19,M,Oatmeal,7999
+50,19,L,Burgundy,7999
+51,20,S,Cream,8999
+52,20,M,Brown,8999
+53,21,S,Black,11999
+54,21,M,Camel,11999
+55,22,S,Camel,18999
+56,22,M,Black,18999
+57,22,L,Charcoal,18999
+58,23,S,Black,12999
+59,23,M,Silver,12999
+60,24,S,Beige,15999
+61,24,M,Beige,15999
+62,25,S,Blue,7999
+63,25,M,Blue,7999
+64,25,L,Black,7999
+65,26,7,Black,12999
+66,26,8,Black,12999
+67,26,8,Brown,12999
+68,27,7,White,5499
+69,27,8,White,5499
+70,27,9,Black,5499
+71,28,7,Tan,4999
+72,28,8,Black,4999
+73,29,7,Taupe,9999
+74,29,8,Taupe,9999
+75,30,One Size,Ivory,1999
+76,31,One Size,Black,8999
+77,31,One Size,Cognac,8999
+78,32,One Size,Navy Print,3499
+79,32,One Size,Rust Print,3499
+80,33,One Size,Grey,2499
+81,33,One Size,Black,2499
+82,34,One Size,Tortoise,4499
+83,34,One Size,Black,4499
+84,35,One Size,Black,4999
+85,35,One Size,Ivory,4999
+86,36,S,Brown,3999
+87,36,M,Black,3999

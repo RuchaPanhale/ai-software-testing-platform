@@ -27,15 +27,15 @@ erDiagram
 
 ## Tables
 
-### `products`: one row per product (32 rows)
+### `products`: one row per product (36 rows)
 | Column | Type | Meaning |
 |---|---|---|
 | product_id | integer, PK | |
 | name | text | e.g. "Wool Blend Coat" |
-| category | text | Shirts, Tops, Dresses, Jeans, Knitwear, Outerwear, Shoes, Accessories |
+| category | text | Shirts, Tops, Dresses, Skirts, Jeans, Knitwear, Outerwear, Shoes, Accessories |
 | description | text | |
 
-### `product_variants`: one row per size/color combination (77 rows)
+### `product_variants`: one row per size/color combination (87 rows)
 | Column | Type | Meaning |
 |---|---|---|
 | variant_id | integer, PK | |

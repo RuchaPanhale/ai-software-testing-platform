@@ -6,6 +6,8 @@ cents (e.g. $19.99 = 1999). Requirement IDs refer to
 
 | Method | Endpoint | Purpose | Requirement |
 |---|---|---|---|
+| GET | `/` | Redirects to the storefront | — |
+| GET | `/shop/` | Storefront page (static HTML, CSS, JS) | — |
 | GET | `/health` | Health check | — |
 | GET | `/products` | List, search, and filter the catalog | CART-001, CART-012 |
 | GET | `/products/{product_id}` | Product details with all variants | CART-001 |

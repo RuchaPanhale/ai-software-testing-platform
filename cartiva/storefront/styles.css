@@ -1,0 +1,245 @@
+/* Cartiva storefront: minimal, editorial fashion-store style. */
+
+:root {
+  --ink: #111;
+  --muted: #777;
+  --line: #e5e5e5;
+  --paper: #fff;
+  --soft: #f6f5f3;
+  --sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --serif: "Didot", "Bodoni 72", "Bodoni MT", Georgia, serif;
+}
+
+* { box-sizing: border-box; }
+
+/* Elements with the hidden attribute must stay hidden even if a rule sets display. */
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+button, input { font: inherit; letter-spacing: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: none; padding: 0; }
+button:disabled { cursor: not-allowed; }
+a { color: inherit; }
+
+.notice {
+  background: var(--ink);
+  color: #fff;
+  text-align: center;
+  padding: 6px 12px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+/* Header */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 18px 28px;
+  background: rgba(255, 255, 255, 0.96);
+}
+.menu-button { font-size: 18px; justify-self: start; display: none; }
+.logo {
+  grid-column: 2;
+  font-family: var(--serif);
+  font-size: 42px;
+  letter-spacing: 0.18em;
+  text-decoration: none;
+}
+.header-actions {
+  justify-self: end;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+.search {
+  border: none;
+  border-bottom: 1px solid var(--ink);
+  padding: 4px 0;
+  width: 160px;
+  outline: none;
+  text-transform: uppercase;
+  background: transparent;
+}
+
+/* Category navigation */
+.categories {
+  display: flex;
+  gap: 22px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 4px 28px 22px;
+  text-transform: uppercase;
+}
+.categories button { padding-bottom: 2px; border-bottom: 1px solid transparent; }
+.categories button.active { border-bottom-color: var(--ink); }
+
+main { padding: 0 28px 60px; }
+.result-count { color: var(--muted); text-transform: uppercase; margin: 0 0 14px; }
+
+/* Product grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 36px 14px;
+}
+
+.card { display: flex; flex-direction: column; gap: 8px; }
+
+.photo {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: var(--soft);
+  overflow: hidden;
+}
+.photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.6s ease;
+}
+.card:hover .photo img { transform: scale(1.03); }
+
+/* Shown until a real photo exists for the product. */
+.tile {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 18px;
+}
+.tile-category { font-size: 10px; text-transform: uppercase; opacity: 0.7; }
+.tile-name {
+  font-family: var(--serif);
+  font-size: 26px;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+
+.badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #fff;
+  padding: 3px 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.card-title { display: flex; justify-content: space-between; gap: 10px; text-transform: uppercase; }
+.price { white-space: nowrap; }
+
+.swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+.swatch {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--line);
+  outline-offset: 2px;
+}
+.swatch.active { outline: 1px solid var(--ink); }
+.color-name { color: var(--muted); text-transform: uppercase; font-size: 10px; }
+
+.sizes { display: flex; gap: 6px; flex-wrap: wrap; }
+.size {
+  min-width: 34px;
+  padding: 5px 6px;
+  border: 1px solid var(--line);
+  text-align: center;
+}
+.size.active { border-color: var(--ink); }
+.size:disabled { color: #bbb; text-decoration: line-through; }
+
+.add {
+  border: 1px solid var(--ink);
+  padding: 9px;
+  text-transform: uppercase;
+  transition: background 0.2s, color 0.2s;
+}
+.add:not(:disabled):hover { background: var(--ink); color: #fff; }
+.add:disabled { border-color: var(--line); color: #bbb; }
+
+.empty { grid-column: 1 / -1; text-align: center; padding: 60px 0; text-transform: uppercase; }
+
+/* Bag drawer */
+.overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.25); z-index: 9; }
+.bag {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: min(420px, 100%);
+  background: #fff;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+}
+.bag-header { display: flex; justify-content: space-between; align-items: center; }
+.bag-header h2 { font-size: 14px; font-weight: normal; letter-spacing: 0.12em; margin: 0; }
+.close { font-size: 16px; }
+.bag-items { flex: 1; overflow-y: auto; margin: 20px 0; }
+.bag-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  text-transform: uppercase;
+}
+.bag-item .meta { color: var(--muted); font-size: 10px; }
+.qty { display: flex; gap: 10px; align-items: center; }
+.qty button { border: 1px solid var(--line); width: 22px; height: 22px; }
+.remove { color: var(--muted); text-decoration: underline; font-size: 10px; }
+.bag-footer { border-top: 1px solid var(--ink); padding-top: 14px; display: grid; gap: 10px; }
+.bag-row { display: flex; justify-content: space-between; text-transform: uppercase; }
+.bag-note { color: var(--muted); margin: 0; font-size: 10px; text-transform: uppercase; }
+.primary { background: var(--ink); color: #fff; padding: 12px; text-transform: uppercase; }
+.primary:disabled { background: #999; }
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: #fff;
+  padding: 10px 16px;
+  text-transform: uppercase;
+  z-index: 20;
+}
+
+.footer {
+  border-top: 1px solid var(--line);
+  padding: 24px 28px;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+@media (max-width: 1000px) {
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .header { padding: 14px 16px; }
+  .logo { font-size: 30px; }
+  .menu-button { display: block; }
+  .search { width: 90px; }
+  .categories { display: none; padding: 8px 16px 18px; }
+  .categories.open { display: flex; }
+  main { padding: 0 12px 40px; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 8px; }
+  .tile-name { font-size: 18px; }
+}
