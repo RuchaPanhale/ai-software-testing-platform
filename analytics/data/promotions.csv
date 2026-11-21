@@ -1,0 +1,6 @@
+promotion_code,name,promotion_type,percent_off,min_subtotal_cents,max_discount_cents,starts_on,ends_on
+WELCOME10,Welcome offer,code,10,5000,2000,2024-01-01,2025-12-31
+SUMMER2024,Summer Sale 2024,automatic,15,0,,2024-07-08,2024-07-14
+BLACKFRIDAY2024,Black Friday Weekend 2024,automatic,25,0,,2024-11-29,2024-12-02
+SUMMER2025,Summer Sale 2025,automatic,15,0,,2025-07-07,2025-07-13
+BLACKFRIDAY2025,Black Friday Weekend 2025,automatic,25,0,,2025-11-28,2025-12-01

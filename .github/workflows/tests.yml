@@ -92,11 +92,14 @@ jobs:
           mkdir -p test-results
           python -m pytest cartiva/backend/tests -v --junitxml=test-results/pytest.xml
 
+      - name: Run analytics data tests
+        run: python -m pytest analytics/tests -v --junitxml=test-results/analytics.xml
+
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pytest-results
-          path: test-results/pytest.xml
+          path: test-results/
           if-no-files-found: warn
           retention-days: 14
