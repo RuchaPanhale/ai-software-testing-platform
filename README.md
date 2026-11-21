@@ -1,79 +1,271 @@
-# AI Software Testing & Regression Platform
+# Cartiva: E-commerce Analytics & AI Test-Evaluation Project
 
 [![Backend CI](https://github.com/RuchaPanhale/ai-software-testing-platform/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/RuchaPanhale/ai-software-testing-platform/actions/workflows/tests.yml)
 
-An ongoing portfolio project building Cartiva, a tested e-commerce
-backend, as the first application for a planned AI-assisted regression
-testing platform.
+> **I measured an e-commerce product, and I measured an AI that tests it.**
 
-## Current status
+Cartiva is a fictional fashion store. I wrote its business rules
+(pricing, discounts, shipping, stock, search) as numbered requirements, built
+a tested backend that enforces them, and use it as a controlled environment
+for two kinds of analysis:
 
-Implemented:
-- FastAPI product catalog, search, filtering, and product details.
-- Cart creation, item additions, quantity updates, and removal.
-- Server-calculated prices and totals using integer cents.
-- Stock validation and PostgreSQL row-level locking for cart changes.
-- Order tables and protection against modifying checked-out carts.
-- 55 automated pytest API test cases.
-- GitHub Actions for PostgreSQL migrations, schema-drift checks,
-  and API tests, with downloadable JUnit XML reports.
+1. **Business analytics:** how shoppers move from browsing to buying, and
+   whether a discount code actually changes behavior.
+2. **AI evaluation:** how good LLM-generated test cases really are, measured
+   against human judgment and against bugs I plant on purpose.
 
-Planned:
-- Checkout transactions and inventory deduction.
-- Regression comparison across baseline and intentionally buggy versions.
-- LLM-assisted test proposals with schema validation and human approval.
-- A testing dashboard and React storefront.
+A personal portfolio project by **Rucha Panhale** (MS Computer Science, AI track),
+built to demonstrate data modeling, SQL, experiment design, and AI-evaluation skills.
 
-## Verification scope
+LinkedIn : https://www.linkedin.com/in/rucha-panhale/
 
-CI applies migrations to a fresh PostgreSQL database and checks for
-schema drift. API tests use isolated in-memory SQLite databases.
-
-A separate local PostgreSQL smoke check sent two simultaneous additions
-to the same cart, each requesting 5 units against stock of 8. One
-succeeded, one was rejected, and the stored quantity remained 5.
-
-This verifies the tested cart behavior; checkout inventory deduction
-and competing purchases across different carts are not implemented yet.
-
-An AI-assisted, multi-application software quality platform.
-
-MS Computer Science termination project at Binghamton University.
-Author: Rucha Panhale
-Faculty supervisor: Professor Shiqi Zhang
+---
 
 ## Project status
 
-In development. Cartiva's FastAPI health endpoint is implemented
-and manually verified. Local PostgreSQL is operational, and Python
-database connectivity is verified using a restricted application account.
-Catalog, cart, checkout, and the testing platform are not implemented yet.
+| Area | Status |
+|---|---|
+| Business rules written as testable requirements (CART-001 to CART-013) | ✅ Done |
+| Backend: catalog, search, filters, cart, order tables | ✅ Done |
+| 55 automated test cases + CI on every push | ✅ Done |
+| Controlled regression experiment (1 planted defect) | ✅ Done |
+| Pricing rules: WELCOME10 discount, shipping, totals | 🔜 Next |
+| Synthetic shop data + SQL analysis + A/B test | 📋 Planned |
+| Mutation suite (10–15 planted defects) | 📋 Planned |
+| LLM test-proposal evaluation | 📋 Planned |
+| Streamlit + Tableau dashboards | 📋 Planned |
 
-## Planned systems
+Only items marked ✅ are built and verified. Everything else is a plan, not a result.
 
-### Cartiva
-A full-stack fashion e-commerce application with a React and
-TypeScript frontend, FastAPI backend, and PostgreSQL database.
+---
 
-Cartiva will be the first application under test.
+## How it fits together
 
-### Quality Platform
-A reusable testing platform for registering applications, managing
-requirements, reviewing AI-generated test suggestions, executing
-approved tests, comparing application versions, and reporting defects.
+```mermaid
+flowchart LR
+    R["📄 Requirements<br/>CART-001 to CART-013<br/>business rules + examples"]
 
-Application-specific adapters will connect each application to
-the shared testing engine.
+    subgraph APP["Cartiva app ✅"]
+        API["FastAPI backend"] --> DB[("PostgreSQL")]
+    end
 
-## Development order
+    subgraph BIZ["Business analytics 📋"]
+        GEN["Synthetic shop data<br/>sessions, events, orders"] --> SQL["SQL analysis<br/>funnel, AOV, A/B test"]
+    end
 
-1. Define requirements, business rules, and architecture.
-2. Build and test Cartiva.
-3. Build the reusable testing and regression platform.
-4. Add structured AI test suggestions and human review.
-5. Add quality dashboards and defect prioritization.
-6. Complete engineering checks, documentation, and demo preparation.
-7. Add a second beauty application if time permits.
+    subgraph EVAL["AI evaluation 📋"]
+        LLM["LLM proposes tests<br/>as structured JSON"] --> HUM["Human review<br/>+ rubric scoring"]
+        HUM --> RUN["Trusted test runner"]
+    end
+
+    R --> API
+    R --> LLM
+    DB --> GEN
+    RUN --> API
+    SQL --> DASH["📊 Dashboard 📋"]
+    RUN --> DASH
+```
+
+The **requirements document** is the anchor. The app enforces it, the tests
+check it, and the AI's proposals are judged against it.
+
+---
+
+## Questions this project answers
+
+**Business (data analyst)** — 📋 planned
+- Where do shoppers drop off between viewing a product, adding to cart, and ordering?
+- Which categories have the highest cart-abandonment rate?
+- What is the average order value, and how does it vary by category?
+- **Does the WELCOME10 code increase conversion?** Run as an A/B test with a
+  significance test, not eyeballed from a chart.
+
+**AI evaluation** — 📋 planned
+- What share of LLM-proposed test cases are valid, relevant, correct, and in scope?
+- Do two human raters agree on what a "good" proposal is (Cohen's kappa)?
+- Does an LLM judge agree with human labels? Where does it disagree?
+- **Do AI-proposed tests catch planted bugs** as well as hand-written tests?
+
+---
+
+## What's built
+
+### 1. Business rules as testable requirements
+
+[`docs/cartiva-requirements.md`](docs/cartiva-requirements.md) defines 13
+requirements with acceptance examples, including the edge cases:
+
+| Rule | Example |
+|---|---|
+| WELCOME10: 10% off, minimum $50.00, capped at $20.00 | A $49.99 cart is ineligible; $250.00 gets the capped $20.00 off |
+| Rounding: half-cents round up | $50.05 gets $5.01 off |
+| Free shipping only **above** $100.00 after discounts | Exactly $100.00 still pays $5.99 |
+| Search must not mix colors from different variants | "green black shirt" doesn't match a shirt sold separately in green and in black |
+
+These rules are the ground truth for the tests and for the AI evaluation.
+
+### 2. A data model built for trustworthy data
+
+```mermaid
+erDiagram
+    PRODUCTS ||--o{ PRODUCT_VARIANTS : "has"
+    CARTS ||--o{ CART_ITEMS : "contains"
+    PRODUCT_VARIANTS ||--o{ CART_ITEMS : "added as"
+    CARTS ||--o| ORDERS : "checked out as"
+    ORDERS ||--o{ ORDER_ITEMS : "contains"
+    PRODUCT_VARIANTS ||--o{ ORDER_ITEMS : "purchased as"
+
+    PRODUCTS {
+        int id PK
+        string name
+        string category
+        string description
+    }
+    PRODUCT_VARIANTS {
+        int id PK
+        int product_id FK
+        string size
+        string color
+        int price_cents
+        int stock_quantity
+    }
+    CARTS {
+        uuid id PK
+    }
+    CART_ITEMS {
+        int id PK
+        uuid cart_id FK
+        int variant_id FK
+        int quantity
+    }
+    ORDERS {
+        uuid id PK
+        uuid cart_id FK "unique: one order per cart"
+        datetime created_at "UTC"
+        int subtotal_cents
+    }
+    ORDER_ITEMS {
+        int id PK
+        uuid order_id FK
+        int variant_id FK
+        string product_name "snapshot"
+        int quantity
+        int unit_price_cents "price at purchase"
+        int line_total_cents
+    }
+```
+
+Design choices that matter for analysis:
+- **Money is stored as integer cents** (e.g. $19.99 = 1999), so totals never
+  suffer floating-point rounding errors.
+- **Order items keep a snapshot** of product name, size, color and price at the
+  time of purchase. Later catalog price changes don't rewrite sales history.
+- **The database rejects bad data itself**, through check constraints: no
+  negative prices or stock, no zero quantities, no blank names, and
+  `line_total = unit_price × quantity` is enforced on every order line.
+- **Prices are calculated on the server**, so a client can't send its own price.
+- **Two database roles:** an owner role runs migrations, and the app connects
+  through a restricted role with only the permissions it needs.
+
+### 3. Automated tests and CI
+
+- **55 test cases** across 28 test functions cover catalog, search, filters,
+  and cart behavior: stock limits, invalid quantities, missing records, price
+  tampering, and carts that are already checked out.
+- Each test gets a **fresh, isolated database**, so tests never depend on
+  each other or on local data.
+- **GitHub Actions runs on every push and pull request:** it applies all
+  database migrations to a fresh PostgreSQL instance, checks that the models
+  and the database schema haven't drifted apart, runs the tests, and saves a
+  JUnit XML results file.
+
+### 4. Controlled regression experiment
+
+To check that the tests catch real bugs, I ran the same suite against two
+copies of the code:
+
+```mermaid
+flowchart LR
+    BASE["Baseline code"] --> T1["Same 55 tests"] --> R1["✅ 55 passed, 0 failed"]
+    BUG["Copy with 1 planted bug:<br/>subtotal adds unit prices,<br/>ignoring quantity"] --> T2["Same 55 tests"] --> R2["❌ 48 passed, 7 failed"]
+```
+
+| Version | Passed | Failed |
+|---|---:|---:|
+| Baseline (commit `ef3acb4`) | 55 | 0 |
+| Planted subtotal bug | 48 | 7 |
+
+**Finding:** 7 tests caught the bug. For example, a two-item cart that should
+total 5998 cents returned 2999 cents.
+
+**What this does not show:** one planted bug can't tell you how good the test
+suite is in general. That's why the next step is a mutation suite of 10–15
+different planted bugs, measured as "caught X of Y."
+
+Reproduce it with `python scripts/regression_demo.py`.
+
+---
+
+## AI evaluation design (planned)
+
+```mermaid
+flowchart LR
+    REQ["Requirement<br/>e.g. CART-004"] --> LLM["LLM proposes<br/>test cases (JSON)"]
+    LLM --> VAL{"Schema<br/>valid?"}
+    VAL -- no --> REJ["Rejected<br/>(counted)"]
+    VAL -- yes --> HUMAN["Human review<br/>rubric scoring"]
+    HUMAN -- approved --> RUNNER["Trusted runner<br/>executes the test"]
+    HUMAN -- rejected --> REJ
+    RUNNER --> MET["Metrics: validity %,<br/>approval %, κ,<br/>bugs caught"]
+```
+
+**Hard rule:** the LLM never writes code that gets executed. It only produces
+structured, schema-validated proposals (endpoint, input, expected result).
+A human approves each one, and a hand-written runner executes approved
+proposals. Pass or fail comes from real test results, never from the AI's opinion.
+
+Planned measurements:
+- **Rubric:** schema-valid, linked to the right requirement, correct expected
+  result, in scope, not a duplicate, would catch a defect
+- **Inter-rater agreement** (Cohen's kappa) between two human raters
+- **LLM-as-judge vs human labels**
+- **Prompt or model comparison**
+- **Defect catch rate:** AI-proposed tests vs hand-written tests, against the mutation suite
+
+---
+
+## Tech stack
+
+| Purpose | Tools |
+|---|---|
+| Data & storage | PostgreSQL 18 (Docker), SQLModel, Alembic migrations |
+| Backend | Python 3.11, FastAPI, Pydantic |
+| Testing & CI | pytest, GitHub Actions, JUnit XML |
+| Analysis (planned) | SQL, pandas, Streamlit, Tableau Public |
+
+---
+
+## Quick start
+
+```bash
+# 1. Start PostgreSQL (Docker Desktop must be running)
+cp .env.example .env          # then set your own local passwords
+docker compose up -d postgres
+
+# 2. Set up Python
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r cartiva/backend/requirements.txt
+
+# 3. Run the tests (no database needed: tests use isolated in-memory databases)
+python -m pytest cartiva/backend/tests -v
+```
+
+Full setup (database roles, migrations, permissions, seed data):
+[`docs/setup.md`](docs/setup.md).
+Endpoint behavior and status codes: [`docs/api.md`](docs/api.md).
+
+---
 
 ## Quality principles
 
@@ -84,431 +276,27 @@ the shared testing engine.
 - Keep requirements, tests, runs, and defects isolated by application.
 - Distinguish application failures from execution infrastructure errors.
 
-## Local setup completed
-
-- Python 3.11.5 virtual environment: .venv
-- Node.js v24.22.0
-- npm 11.19.1
-- Git repository with main branch
-
-Activate the Python environment from the project folder:
-
-```bash
-source .venv/bin/activate
-
-## Local PostgreSQL Setup
-
-Docker Desktop must be running.
-
-For first-time setup, copy the configuration template:
-
-```bash
-cp .env.example .env
-```
-
-Replace the password placeholder in `.env` with a unique
-local-development password. Do not overwrite an existing configured
-`.env` or commit its contents.
-
-Start PostgreSQL:
-
-```bash
-docker compose up -d postgres
-```
-
-Check database health:
-
-```bash
-docker compose ps
-```
-
-Verify connectivity:
-
-```bash
-docker compose exec postgres psql -U cartiva_admin -d cartiva -c "SELECT current_database(), current_user;"
-```
-
-Connection details for applications running on the Mac:
-- Host: 127.0.0.1
-- Port: 5433
-- Database: cartiva
-
-The initialization account is for local database administration.
-A restricted application account will be configured separately.
-
-Stop PostgreSQL when finished:
-
-```bash
-docker compose stop postgres
-```
-
-Database data persists in the named Docker volume.
-`docker compose down -v` deletes that volume and its database data.
-
-Initialization credentials apply when the database volume is first
-created. Editing `.env` later does not automatically change an
-existing database user's password.
-
-## Cartiva Application Database Account
-
-After initializing PostgreSQL, create a restricted application account.
-Perform this setup once per fresh database volume.
-
-Open PostgreSQL as the local administrator:
-
-```bash
-docker compose exec postgres psql -U cartiva_admin -d cartiva
-```
-
-At the PostgreSQL prompt, run:
-
-```sql
-CREATE ROLE cartiva_app WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE;
-```
-
-Set its password interactively:
-
-```text
-\password cartiva_app
-```
-
-Grant connection and schema access:
-
-```sql
-GRANT CONNECT ON DATABASE cartiva TO cartiva_app;
-GRANT USAGE ON SCHEMA public TO cartiva_app;
-```
-
-Exit:
-
-```text
-\q
-```
-
-Set CARTIVA_DB_PASSWORD in your local .env to the password you chose.
-Keep .env.example as a template without actual passwords.
-
-This account currently has connection and schema-usage permissions.
-Table permissions will be added alongside database migrations.
-The application account must not be used to create or migrate tables.
-
-## Python Database Connection
-
-Activate the project environment and install dependencies:
-
-```bash
-source .venv/bin/activate
-python -m pip install -r cartiva/backend/requirements.txt
-```
-
-The backend reads CARTIVA_DB_ settings from the root .env file.
-Python running on the host connects to 127.0.0.1:5433.
-
-Verify connectivity from the project root:
-
-```bash
-python - <<'PY'
-from sqlalchemy import text
-from cartiva.backend.database import get_engine
-
-with get_engine().connect() as connection:
-    row = connection.execute(
-        text("SELECT current_database(), current_user")
-    ).one()
-    print(f"Database: {row[0]}")
-    print(f"User: {row[1]}")
-    print("Python-to-PostgreSQL connection successful.")
-PY
-```
-
-Expected database: cartiva.
-Expected user: cartiva_app.
-
-
-### Seed the local product catalog
-
-After configuring `.env`, starting PostgreSQL, and applying migrations,
-run this command from the repository root with the Python virtual
-environment activated:
-
-```bash
-python -m cartiva.backend.seed
-```
-
-On an empty catalog, this creates three sample products and eight variants,
-including a sold-out variant for inventory testing.
-
-The script uses administrator credentials from `.env` for this setup
-operation. The API continues using its restricted application account.
-
-All inserts run in one transaction. If either catalog table already
-contains data, the script skips initialization without changing existing
-records. It does not reset inventory or synchronize catalog updates.
-
-Run this script once at a time for local development.
-
-
-### Catalog API
-
-With PostgreSQL running and the sample catalog seeded, start the API:
-
-```bash
-python -m uvicorn cartiva.backend.main:app --reload
-```
-
-- Catalog: http://127.0.0.1:8000/products
-- Interactive API documentation: http://127.0.0.1:8000/docs
-
-`GET /products` returns products ordered by name and ID, with their
-variants ordered by ID. Each variant includes size, color, price in
-integer cents, stock quantity, and an optional image URL.
-
-Sold-out variants remain visible with a stock quantity of zero.
-An empty catalog returns an empty list.
-
-Search and filtering are supported through optional query parameters:
-
-- `q`: matches every search word against a product's name, category,
-  and a single variant's color.
-- `category`: matches an exact category.
-- `color`: matches an exact variant color.
-
-Matching ignores capitalization and normalizes extra whitespace.
-Search and filters are applied together. Responses include only matching
-variants, including sold-out variants. No matches return HTTP 200 with `[]`.
-
-Example: `/products?q=green%20shirt&category=Shirts`
-
-Pagination is not implemented yet.
-
-#### Product details
-
-`GET /products/{product_id}` returns a single product with all its
-variants ordered by variant ID, including sold-out options.
-
-Example: `/products/1`
-
-A missing product returns HTTP 404 with:
-{"detail": "Product not found"}
-
-
-### Run catalog API tests
-
-From the repository root, with the virtual environment activated:
-
-```bash
-python -m pytest cartiva/backend/tests/test_catalog.py -v
-```
-
-The tests verify:
-- An empty catalog returns HTTP 200 and an empty list.
-- Products are sorted correctly and include their associated variants.
-- Prices remain in integer cents.
-- Sold-out variants remain visible.
-
-Each test uses a fresh in-memory SQLite database through a FastAPI
-dependency override. Tests do not modify the local PostgreSQL catalog
-and do not require Uvicorn or Docker to be running.
-
-These tests cover API behavior. PostgreSQL-specific migrations,
-permissions, and concurrency require separate integration tests.
-
-Search tests also cover capitalization, extra whitespace, combined and
-conflicting filters, exact category/color matching, blank inputs, and
-no-result cases. They verify that search does not combine colors from
-different variants or match description text.
-
-Product detail tests verify product fields, variant ordering,
-sold-out visibility, exclusion of unrelated products' variants,
-and HTTP 404 for a missing product.
-
-
-### Cart database permissions
-
-After applying the cart migration, grant the application role access.
-Run from the repository root:
-
-```bash
-docker compose exec postgres psql \
-  -U cartiva_admin \
-  -d cartiva \
-  -v ON_ERROR_STOP=1 \
-  -c "
-BEGIN;
-GRANT SELECT, INSERT ON TABLE public.carts TO cartiva_app;
-GRANT SELECT, INSERT, UPDATE, DELETE
-    ON TABLE public.cart_items TO cartiva_app;
-GRANT USAGE ON SEQUENCE public.cart_items_id_seq TO cartiva_app;
-GRANT UPDATE (id) ON TABLE public.carts TO cartiva_app;
-COMMIT;
-"
-```
-
-Migrations run as `cartiva_admin`; the API connects as `cartiva_app`.
-New tables require appropriate application permissions.
-
-`POST /carts` creates an empty cart and returns HTTP 201 with its UUID.
-Each request creates a new cart.
-
-Adding items locks the parent cart row until the transaction ends,
-serializing simultaneous additions to the same cart. PostgreSQL
-requires an UPDATE privilege for this row lock.
-
-All future endpoints that modify cart contents must follow the same
-locking convention. Adding items does not reserve inventory.
-
-### Run all backend API tests
-
-From the repository root, with the virtual environment activated:
-
-```bash
-python -m pytest cartiva/backend/tests -v
-```
-
-Tests use a shared fixture in `tests/conftest.py`, giving each test
-a fresh in-memory SQLite database.
-
-Cart tests verify that creating a cart returns HTTP 201 with a valid
-UUID, persists an empty cart, and creates distinct carts across requests.
-PostgreSQL permissions are checked separately against the running API.
-
-### Add items to a cart
-
-`POST /carts/{cart_id}/items` accepts:
-
-{"variant_id": 1, "quantity": 2}
-
-Adding an existing variant increases its quantity. The combined quantity
-must not exceed available stock. Adding items does not reserve or reduce
-inventory.
-
-Responses:
-- 200: item added or quantity increased.
-- 404: cart or variant not found.
-- 409: requested quantity exceeds available stock.
-- 422: invalid request data.
-
-Automated tests cover quantity accumulation, stock limits, invalid
-quantities, missing resources, sold-out variants, and rejection of
-client-supplied prices.
-
-A manual PostgreSQL concurrency smoke check sent two simultaneous
-requests, each requesting 5 units against stock of 8. One returned 200
-and the other 409. The stored quantity was 5 and stock remained 8.
-SQLite tests do not verify PostgreSQL row-lock behavior.
-
-### View a cart
-
-`GET /carts/{cart_id}` returns cart items ordered by item ID, with
-product details, current variant prices, line totals, and a subtotal.
-
-All monetary values use integer cents. Each line total equals the
-current unit price multiplied by quantity. The subtotal excludes
-discounts, shipping, and tax.
-
-An empty cart returns an empty items list and subtotal zero.
-A missing cart returns HTTP 404.
-
-Items with insufficient stock remain visible with
-`has_enough_stock: false`. Viewing a cart does not modify quantities
-or inventory. Stock and prices must be checked again at checkout.
-
-Tests cover empty and missing carts, item details, current prices,
-reduced stock, multiple-item totals, and separation between carts.
-
-### Update a cart item
-
-`PATCH /carts/{cart_id}/items/{item_id}` accepts:
-
-{"quantity": 3}
-
-This sets the quantity rather than adding to it. Quantity must be a
-positive integer and cannot exceed current stock. Repeating the same
-update leaves the quantity unchanged.
-
-### Remove a cart item
-
-`DELETE /carts/{cart_id}/items/{item_id}` removes the specified item
-and returns HTTP 204 with no response body. The cart remains available.
-
-Both endpoints verify that the item belongs to the specified cart
-and lock the parent cart during changes. Missing carts or items
-return HTTP 404. Updating and removing do not change inventory.
-
-Automated tests cover quantity changes, recalculated totals, rejected
-updates, missing resources, cross-cart item checks, and removal.
-
-A PostgreSQL smoke check verified adding, updating, viewing, and
-removing an item. The final cart was empty with subtotal zero, and
-inventory remained unchanged.
-
-### Order database permissions
-
-After applying the order migration, run:
-
-```bash
-docker compose exec postgres psql \
-  -U cartiva_admin \
-  -d cartiva \
-  -v ON_ERROR_STOP=1 \
-  -c "
-BEGIN;
-GRANT SELECT, INSERT
-    ON TABLE public.orders, public.order_items TO cartiva_app;
-GRANT USAGE
-    ON SEQUENCE public.order_items_id_seq TO cartiva_app;
-COMMIT;
-"
-```
-
-Order items preserve product names, sizes, colors, quantities, and
-purchase prices. A unique constraint allows only one order per cart.
-
-
-### Checked-out carts
-
-A cart is considered checked out when an order references it.
-
-Adding, updating, or removing items from that cart returns HTTP 409
-with "Cart has already been checked out". Viewing it remains allowed.
-
-All three modification endpoints use a shared helper that locks the
-cart before checking for an existing order. Tests verify that rejected
-changes preserve cart contents and inventory.
-
-Order tables and cart guards are implemented. The checkout endpoint
-and inventory deduction are not implemented yet.
-
-## Controlled regression experiment
-
-Run from the repository root with the virtual environment activated:
-
-```bash
-python scripts/regression_demo.py
-```
-
-The script creates temporary copies of the committed code and runs
-the same API tests against:
-- The unchanged baseline.
-- A candidate with one deliberate defect: the cart subtotal sums unit
-  prices instead of quantity-adjusted line totals.
-
-The working application and development database are not modified.
-Tests use isolated SQLite databases. Logs, JUnit XML reports, and a
-JSON comparison summary are saved under `reports/regression-demo/`.
-
-### Verified result
-
-Baseline commit: `ef3acb4db66df4e0c12bb306423e6a2b46fb98a8`
-
-| Version | Passed | Failed |
-|---|---:|---:|
-| Baseline | 55 | 0 |
-| Faulty candidate | 48 | 7 |
-
-One deliberately injected subtotal defect was detected by seven test
-cases. For example, a two-item cart returned 2999 cents instead of
-the expected 5998 cents.
-
-This is a controlled defect-detection demonstration, not a general
-defect-detection accuracy measurement or a completed AI testing platform.
+## Known limitations
+
+- **Tests run on SQLite, not PostgreSQL.** PostgreSQL-specific behavior
+  (row locking under concurrency, permissions) was checked manually, not in
+  automated tests.
+- **Concurrency was smoke-tested once by hand:** two simultaneous requests for
+  5 units each against stock of 8. One succeeded, one was rejected, and the
+  stored quantity stayed 5.
+- **Not built:** checkout, inventory deduction, guest-session cookies, and
+  duplicate-checkout protection (CART-008, CART-009, CART-011). These are
+  outside the current scope.
+- **Tests are not yet tagged with requirement IDs**, so requirement-level
+  coverage can't be reported automatically yet.
+- **Planned shop data will be synthetic.** Findings from it will demonstrate
+  metric design and method, not real customer behavior.
+
+## Roadmap
+
+1. Pricing rules: WELCOME10, shipping, final totals (CART-004 to CART-006)
+2. Synthetic shop data with a fixed random seed and documented assumptions
+3. SQL analysis + findings memo
+4. Mutation suite: 10–15 planted defects
+5. LLM test-proposal evaluation
+6. Streamlit dashboard (business, AI eval, test health) + Tableau Public
