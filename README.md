@@ -97,7 +97,7 @@ erDiagram
     PRODUCT_VARIANTS ||--o{ ORDER_ITEMS : "sold as"
 ```
 
-| Table | Rows | One row per… |
+| Table | Rows | One row per |
 |---|---:|---|
 | customers | 8,000 | customer, with signup date, state, channel and A/B group |
 | sessions | 22,249 | visit, with device and traffic channel |
@@ -208,6 +208,7 @@ python -m uvicorn cartiva.backend.main:app --reload
 | Data | PostgreSQL 18 (Docker), Python data generator with a fixed seed |
 | Store and backend | Python 3.11, FastAPI, SQLModel, Alembic |
 | Testing and CI | pytest, GitHub Actions |
+| AI assistant | Claude Code |
 
 ## How this was built
 
