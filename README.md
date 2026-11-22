@@ -1,23 +1,155 @@
-# Cartiva: E-commerce Analytics & AI Test-Evaluation Project
+# Cartiva: E-commerce Analytics Case Study (SQL + Tableau)
 
 [![Backend CI](https://github.com/RuchaPanhale/ai-software-testing-platform/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/RuchaPanhale/ai-software-testing-platform/actions/workflows/tests.yml)
 
-> **I measured an e-commerce product, and I measured an AI that tests it.**
+**How does a growing online fashion store turn visits into revenue, and where
+does it lose shoppers?** I answered that with PostgreSQL and Tableau on two
+years of shop data: 8,000 customers, 22,249 sessions, 80,178 events and
+2,384 orders, including a randomized A/B test of a discount code.
 
-Cartiva is a fictional fashion store. I wrote its business rules
-(pricing, discounts, shipping, stock, search) as numbered requirements, built
-a tested backend that enforces them, and use it as a controlled environment
-for two kinds of analysis:
+### 📊 [View the live dashboard on Tableau Public](https://public.tableau.com/app/profile/rucha.panhale/viz/CartivaShopPerformance/CartivaDashboard)
 
-1. **Business analytics:** how shoppers move from browsing to buying, and
-   whether a discount code actually changes behavior.
-2. **AI evaluation:** how good LLM-generated test cases really are, measured
-   against human judgment and against bugs I plant on purpose.
+[![Cartiva Shop Performance dashboard](docs/images/dashboard.png)](https://public.tableau.com/app/profile/rucha.panhale/viz/CartivaShopPerformance/CartivaDashboard)
 
-A personal portfolio project by **Rucha Panhale** (MS Computer Science, AI track),
-built to demonstrate data modeling, SQL, experiment design, and AI-evaluation skills.
-
+A portfolio project by **Rucha Panhale** (MS Computer Science, AI track) ·
 [LinkedIn](https://www.linkedin.com/in/rucha-panhale/)
+
+**Skills demonstrated:** SQL (CTEs, joins, window functions, aggregation) ·
+KPI and metric definition · funnel and cohort-style analysis · A/B testing and
+statistical significance · data modeling and data-quality validation ·
+Tableau dashboard design · communicating findings
+
+> Cartiva is a fictional store and its data is **synthetic**: generated with a
+> fixed random seed and fully documented assumptions
+> ([`docs/data-assumptions.md`](docs/data-assumptions.md)). The findings
+> demonstrate analysis method, not real customer behavior.
+
+---
+
+## Key findings
+
+1. **Revenue grew 34% in 2025** ($75,973 → $101,777), driven by more orders
+   (+41%), not bigger ones: average order value fell from $76.66 to $73.06.
+2. **Only 30.6% of sessions add anything to the cart**, the biggest drop in
+   the conversion funnel.
+3. **Outerwear has the highest cart abandonment (72.6%)**; Accessories the
+   lowest (59.8%).
+4. **WELCOME10 raised the share of new customers who ordered** from 23.25% to
+   26.89% (+3.64 points, z = 3.75, significant at the 5% level).
+   *(Synthetic test with a disclosed built-in effect; it demonstrates the A/B
+   method.)*
+
+| Metric | 2024 | 2025 | All time |
+|---|---:|---:|---:|
+| Net revenue | $75,973 | $101,777 | $177,750 |
+| Orders | 991 | 1,393 | 2,384 |
+| Average order value | $76.66 | $73.06 | $74.56 |
+| Conversion rate (orders ÷ sessions) | 10.44% | 10.92% | 10.72% |
+
+---
+
+## The analysis
+
+Every result comes from a SQL file in [`analytics/queries/`](analytics/queries/),
+run against PostgreSQL and exported to CSV for Tableau with
+[`analytics/export_results.sh`](analytics/export_results.sh).
+
+| Query | Business question | SQL techniques |
+|---|---|---|
+| [`02_kpis_by_year`](analytics/queries/02_kpis_by_year.sql) | How big is the business, and how did 2025 compare with 2024? | CTEs, `EXTRACT`, `UNION ALL`, explicit metric definitions |
+| [`03_monthly_trend`](analytics/queries/03_monthly_trend.sql) | How do sessions, orders and revenue move month by month? | `DATE_TRUNC`, `LEFT JOIN` to keep months without orders, `COALESCE` |
+| [`04_conversion_funnel`](analytics/queries/04_conversion_funnel.sql) | Where do shoppers drop off between browsing and buying? | `CASE` pivot per session, window functions `LAG` and `FIRST_VALUE` |
+| [`05_category_performance`](analytics/queries/05_category_performance.sql) | Which categories sell, and which are abandoned in the cart? | Multi-table joins, share of total with `SUM() OVER ()` |
+| [`06_welcome10_experiment`](analytics/queries/06_welcome10_experiment.sql) | Did a discount code bring in more first-time buyers? | `EXISTS`, `FILTER`, a two-proportion z-test written in SQL |
+| [`07_sales_vs_normal_days`](analytics/queries/07_sales_vs_normal_days.sql) | What do sitewide sales do to traffic, orders and order size? | `GENERATE_SERIES` calendar spine, pre-aggregated joins, `NULLIF` |
+
+**Metric definitions** are written at the top of each query. For example,
+*net revenue* = subtotal − discount (shipping excluded), and *conversion
+rate* = orders ÷ sessions.
+
+**Performance:** query `07` first used a correlated subquery for every
+calendar day (4 s). Rewriting it to aggregate sessions and orders once per day
+and then join cut it to 0.035 s with identical results.
+
+---
+
+## The data
+
+```mermaid
+erDiagram
+    CUSTOMERS ||--o{ SESSIONS : "visits"
+    SESSIONS ||--o{ EVENTS : "contains"
+    SESSIONS ||--o| ORDERS : "may end in"
+    CUSTOMERS ||--o{ ORDERS : "places"
+    ORDERS ||--|{ ORDER_ITEMS : "contains"
+    PROMOTIONS |o--o{ ORDERS : "applied to"
+    PRODUCTS ||--o{ PRODUCT_VARIANTS : "has"
+    PRODUCT_VARIANTS ||--o{ ORDER_ITEMS : "sold as"
+```
+
+| Table | Rows | One row per… |
+|---|---:|---|
+| customers | 8,000 | customer, with signup date, state, channel and A/B group |
+| sessions | 22,249 | visit, with device and traffic channel |
+| events | 80,178 | product view, add to cart, checkout start or purchase |
+| orders | 2,384 | order, with subtotal, discount, shipping and total |
+| order_items | 2,815 | product line in an order |
+| products / variants / promotions | 36 / 87 / 5 | catalog item / size-color option / discount |
+
+**What's in it:** a store that launches in January 2024, seasonality with a
+December peak, Summer and Black Friday sales in both years, a randomized
+WELCOME10 experiment, repeat customers and device differences.
+
+**Built to be trustworthy:**
+- **Documented:** every assumption, including the effects deliberately built
+  in, is in [`docs/data-assumptions.md`](docs/data-assumptions.md); every
+  column is in [`docs/data-dictionary.md`](docs/data-dictionary.md).
+- **Reproducible:** the same random seed always produces byte-identical data.
+- **Validated by the database:** primary keys, foreign keys and checks such as
+  `total = subtotal − discount + shipping` and
+  `line_total = unit_price × quantity` reject inconsistent rows.
+- **Tested:** 20 automated tests check the pricing rules against the
+  acceptance examples in the requirements, reproducibility, and referential
+  integrity on every push.
+- **Money in integer cents**, so totals never suffer floating-point rounding.
+
+---
+
+## Behind the data: the store and its business rules
+
+Cartiva's rules (pricing, discounts, shipping, stock, search) are written as
+13 numbered requirements with acceptance examples in
+[`docs/cartiva-requirements.md`](docs/cartiva-requirements.md). For example:
+
+| Rule | Edge case |
+|---|---|
+| WELCOME10: 10% off, minimum $50.00, capped at $20.00 | $49.99 is ineligible; $250.00 gets the capped $20.00 |
+| Half-cents round up | $50.05 gets $5.01 off |
+| Free shipping only **above** $100.00 after discounts | exactly $100.00 still pays $5.99 |
+
+A FastAPI backend enforces these rules, and a small storefront at `/shop`
+lets you browse the 36 products and add items to a bag.
+
+```mermaid
+flowchart LR
+    R["📄 Business rules<br/>CART-001 to 013"] --> APP["Store + API ✅"]
+    R --> GEN["Data generator ✅"]
+    APP --> DB[("PostgreSQL")]
+    GEN --> DB
+    DB --> SQL["SQL analysis ✅"]
+    SQL --> TAB["📊 Tableau dashboard ✅"]
+```
+
+**Engineering quality:**
+- **79 automated tests:** 59 API tests (catalog, search, cart, stock limits,
+  price tampering, checked-out carts, storefront) and 20 data tests.
+- **CI on every push** (GitHub Actions): applies all database migrations to a
+  fresh PostgreSQL 18 instance, checks for schema drift, and runs the tests.
+- **Regression experiment:** with one deliberately planted bug, the test suite
+  went from 55 passed to 48 passed and 7 failed, catching it.
+
+Endpoint details: [`docs/api.md`](docs/api.md). Full setup:
+[`docs/setup.md`](docs/setup.md).
 
 ---
 
@@ -25,286 +157,14 @@ built to demonstrate data modeling, SQL, experiment design, and AI-evaluation sk
 
 | Area | Status |
 |---|---|
-| Business rules written as testable requirements (CART-001 to CART-013) | ✅ Done |
-| Backend: catalog, search, filters, cart, order tables | ✅ Done |
-| Automated tests (79 test cases) + CI on every push | ✅ Done |
-| Controlled regression experiment (1 planted defect) | ✅ Done |
-| Pricing rules: WELCOME10 discount, shipping, totals (tested against the acceptance examples) | ✅ Done |
-| Synthetic shop dataset: 2 years, 8,000 customers, ~80K events | ✅ Done |
-| Storefront page (browse, filter, search, add to bag) | ✅ Done |
-| SQL analysis + findings memo | 🔄 In progress |
-| Tableau Public dashboard | 🔄 In progress |
-| WELCOME10 A/B significance test | 📋 Planned |
-| Mutation suite + LLM test-proposal evaluation | 📋 Planned (later phase) |
-
-Only items marked ✅ are built and verified. Everything else is a plan, not a result.
-
----
-
-## How it fits together
-
-```mermaid
-flowchart LR
-    R["📄 Requirements<br/>CART-001 to CART-013<br/>business rules + examples"]
-
-    subgraph APP["Cartiva app ✅"]
-        SHOP["Storefront"] --> API["FastAPI backend"] --> DB[("PostgreSQL")]
-    end
-
-    subgraph BIZ["Business analytics"]
-        GEN["Synthetic shop data ✅<br/>sessions, events, orders"] --> SQL["SQL analysis 🔄<br/>funnel, AOV, A/B test"]
-    end
-
-    subgraph EVAL["AI evaluation 📋"]
-        LLM["LLM proposes tests<br/>as structured JSON"] --> HUM["Human review<br/>+ rubric scoring"]
-        HUM --> RUN["Trusted test runner"]
-    end
-
-    R --> API
-    R --> LLM
-    DB --> GEN
-    RUN --> API
-    SQL --> DASH["📊 Tableau dashboard 🔄"]
-    RUN --> DASH
-```
-
-The **requirements document** is the anchor. The app enforces it, the tests
-check it, and the AI's proposals are judged against it.
-
----
-
-## Questions this project answers
-
-**Business (data analyst)** — 🔄 in progress: SQL queries and a Tableau dashboard ([see below](#7-analysis-in-progress))
-- Where do shoppers drop off between viewing a product, adding to cart, and ordering?
-- Which categories have the highest cart-abandonment rate?
-- What is the average order value, and how does it vary by category?
-- **Does the WELCOME10 code increase conversion?** Run as an A/B test with a
-  significance test, not eyeballed from a chart.
-
-**AI evaluation** — 📋 planned (later phase)
-- What share of LLM-proposed test cases are valid, relevant, correct, and in scope?
-- Do two human raters agree on what a "good" proposal is (Cohen's kappa)?
-- Does an LLM judge agree with human labels? Where does it disagree?
-- **Do AI-proposed tests catch planted bugs** as well as hand-written tests?
-
----
-
-## What's built
-
-### 1. Business rules as testable requirements
-
-[`docs/cartiva-requirements.md`](docs/cartiva-requirements.md) defines 13
-requirements with acceptance examples, including the edge cases:
-
-| Rule | Example |
-|---|---|
-| WELCOME10: 10% off, minimum $50.00, capped at $20.00 | A $49.99 cart is ineligible; $250.00 gets the capped $20.00 off |
-| Rounding: half-cents round up | $50.05 gets $5.01 off |
-| Free shipping only **above** $100.00 after discounts | Exactly $100.00 still pays $5.99 |
-| Search must not mix colors from different variants | "green black shirt" doesn't match a shirt sold separately in green and in black |
-
-These rules are the ground truth for the tests and for the AI evaluation.
-
-### 2. A data model built for trustworthy data
-
-```mermaid
-erDiagram
-    PRODUCTS ||--o{ PRODUCT_VARIANTS : "has"
-    CARTS ||--o{ CART_ITEMS : "contains"
-    PRODUCT_VARIANTS ||--o{ CART_ITEMS : "added as"
-    CARTS ||--o| ORDERS : "checked out as"
-    ORDERS ||--o{ ORDER_ITEMS : "contains"
-    PRODUCT_VARIANTS ||--o{ ORDER_ITEMS : "purchased as"
-
-    PRODUCTS {
-        int id PK
-        string name
-        string category
-        string description
-    }
-    PRODUCT_VARIANTS {
-        int id PK
-        int product_id FK
-        string size
-        string color
-        int price_cents
-        int stock_quantity
-    }
-    CARTS {
-        uuid id PK
-    }
-    CART_ITEMS {
-        int id PK
-        uuid cart_id FK
-        int variant_id FK
-        int quantity
-    }
-    ORDERS {
-        uuid id PK
-        uuid cart_id FK "unique: one order per cart"
-        datetime created_at "UTC"
-        int subtotal_cents
-    }
-    ORDER_ITEMS {
-        int id PK
-        uuid order_id FK
-        int variant_id FK
-        string product_name "snapshot"
-        int quantity
-        int unit_price_cents "price at purchase"
-        int line_total_cents
-    }
-```
-
-Design choices that matter for analysis:
-- **Money is stored as integer cents** (e.g. $19.99 = 1999), so totals never
-  suffer floating-point rounding errors.
-- **Order items keep a snapshot** of product name, size, color and price at the
-  time of purchase. Later catalog price changes don't rewrite sales history.
-- **The database rejects bad data itself**, through check constraints: no
-  negative prices or stock, no zero quantities, no blank names, and
-  `line_total = unit_price × quantity` is enforced on every order line.
-- **Prices are calculated on the server**, so a client can't send its own price.
-- **Two database roles:** an owner role runs migrations, and the app connects
-  through a restricted role with only the permissions it needs.
-
-### 3. Automated tests and CI
-
-- **59 API test cases** cover catalog, search, filters, cart behavior (stock
-  limits, invalid quantities, missing records, price tampering, carts that are
-  already checked out) and the storefront page.
-- **20 data tests** check the pricing rules against the acceptance examples in
-  the requirements, and check that the dataset is reproducible and internally
-  consistent.
-- Each test gets a **fresh, isolated database**, so tests never depend on
-  each other or on local data.
-- **GitHub Actions runs on every push and pull request:** it applies all
-  database migrations to a fresh PostgreSQL instance, checks that the models
-  and the database schema haven't drifted apart, runs the tests, and saves a
-  JUnit XML results file.
-
-### 4. Controlled regression experiment
-
-To check that the tests catch real bugs, I ran the same suite against two
-copies of the code:
-
-```mermaid
-flowchart LR
-    BASE["Baseline code"] --> T1["Same 55 tests"] --> R1["✅ 55 passed, 0 failed"]
-    BUG["Copy with 1 planted bug:<br/>subtotal adds unit prices,<br/>ignoring quantity"] --> T2["Same 55 tests"] --> R2["❌ 48 passed, 7 failed"]
-```
-
-| Version | Passed | Failed |
-|---|---:|---:|
-| Baseline (commit `ef3acb4`) | 55 | 0 |
-| Planted subtotal bug | 48 | 7 |
-
-**Finding:** 7 tests caught the bug. For example, a two-item cart that should
-total 5998 cents returned 2999 cents.
-
-**What this does not show:** one planted bug can't tell you how good the test
-suite is in general. That's why the next step is a mutation suite of 10–15
-different planted bugs, measured as "caught X of Y."
-
-Reproduce it with `python scripts/regression_demo.py`.
-
-### 5. Synthetic shop dataset
-
-Cartiva has no real customers, so its shop activity is generated by
-[`analytics/generate_data.py`](analytics/generate_data.py) with a fixed random
-seed: the same seed always produces exactly the same data.
-
-| Table | Rows | One row per… |
-|---|---:|---|
-| customers | 8,000 | customer, with signup date, state, channel and A/B group |
-| sessions | ~22,000 | visit, with device and traffic channel |
-| events | ~80,000 | product view, add to cart, checkout start or purchase |
-| orders | ~2,400 | order, with subtotal, discount, shipping and total |
-| order_items | ~2,800 | product line in an order |
-| products / variants / promotions | 36 / 87 / 5 | catalog item / size-color option / discount |
-
-What's in it: two years (2024–2025) of a store that launches in January 2024,
-seasonality with a December peak, Summer and Black Friday sales, a WELCOME10
-A/B experiment, repeat customers, and device differences. Every order is
-priced with the same tested rules as the requirements.
-
-- **Every assumption is written down** in
-  [`docs/data-assumptions.md`](docs/data-assumptions.md), including the effects
-  deliberately built in, so findings can be checked against them.
-- **Table and column definitions:** [`docs/data-dictionary.md`](docs/data-dictionary.md)
-- **Loaded into PostgreSQL** in its own `analytics` schema, with primary keys,
-  foreign keys and checks such as `total = subtotal − discount + shipping`.
-  The CSV files in [`analytics/data/`](analytics/data/) are ready for Tableau.
-
-### 6. Storefront
-
-A minimal store page at `/shop` that browses, filters and searches the 36
-products and adds items to a bag through the real cart API. Prices always come
-from the server. Checkout is intentionally not part of this demo.
-
-### 7. Analysis (in progress)
-
-The analysis workflow is set up and running end to end:
-
-```mermaid
-flowchart LR
-    PG[("PostgreSQL<br/>analytics schema")] --> Q["SQL queries<br/>analytics/queries/"]
-    Q --> X["CSV exports<br/>analytics/exports/"]
-    X --> T["Tableau Public"]
-```
-
-- **SQL:** queries are saved as numbered files in
-  [`analytics/queries/`](analytics/queries/) and run against PostgreSQL.
-- **Exports:** query results are saved to
-  [`analytics/exports/`](analytics/exports/) for Tableau.
-- **First chart:** [Top 10 products by units sold](https://public.tableau.com/app/profile/rucha.panhale/viz/CartivaTopProducts/Top10ProductsbyUnitsSold)
-  on Tableau Public.
-
-**Now working on:** KPI, conversion funnel, cart abandonment, average order
-value by category, WELCOME10 group comparison and sale-period queries, which
-feed a one-page Tableau dashboard and a written findings memo.
-
----
-
-## AI evaluation design (planned)
-
-```mermaid
-flowchart LR
-    REQ["Requirement<br/>e.g. CART-004"] --> LLM["LLM proposes<br/>test cases (JSON)"]
-    LLM --> VAL{"Schema<br/>valid?"}
-    VAL -- no --> REJ["Rejected<br/>(counted)"]
-    VAL -- yes --> HUMAN["Human review<br/>rubric scoring"]
-    HUMAN -- approved --> RUNNER["Trusted runner<br/>executes the test"]
-    HUMAN -- rejected --> REJ
-    RUNNER --> MET["Metrics: validity %,<br/>approval %, κ,<br/>bugs caught"]
-```
-
-**Hard rule:** the LLM never writes code that gets executed. It only produces
-structured, schema-validated proposals (endpoint, input, expected result).
-A human approves each one, and a hand-written runner executes approved
-proposals. Pass or fail comes from real test results, never from the AI's opinion.
-
-Planned measurements:
-- **Rubric:** schema-valid, linked to the right requirement, correct expected
-  result, in scope, not a duplicate, would catch a defect
-- **Inter-rater agreement** (Cohen's kappa) between two human raters
-- **LLM-as-judge vs human labels**
-- **Prompt or model comparison**
-- **Defect catch rate:** AI-proposed tests vs hand-written tests, against the mutation suite
-
----
-
-## Tech stack
-
-| Purpose | Tools |
-|---|---|
-| Data & storage | PostgreSQL 18 (Docker), SQLModel, Alembic migrations |
-| Backend | Python 3.11, FastAPI, Pydantic |
-| Testing & CI | pytest, GitHub Actions, JUnit XML |
-| Data generation | Python (standard library only), seeded and tested |
-| Analysis | PostgreSQL SQL (written in DBeaver), Tableau Public |
-| Storefront | HTML, CSS, JavaScript (no framework), served by FastAPI |
+| Business requirements (CART-001 to CART-013) | ✅ Done |
+| Store backend, storefront, 79 tests, CI | ✅ Done |
+| Synthetic dataset (2 years) with documented assumptions | ✅ Done |
+| SQL analysis (6 queries) | ✅ Done |
+| Tableau Public dashboard + key findings | ✅ Done |
+| Cohort / repeat-customer analysis | 📋 Planned |
+| Policy changes over time with before/after analysis | 📋 Planned |
+| Evaluation of LLM-generated test cases | 📋 Planned (later phase) |
 
 ---
 
@@ -315,71 +175,56 @@ Planned measurements:
 cp .env.example .env          # then set your own local passwords
 docker compose up -d postgres
 
-# 2. Set up Python
+# 2. Set up Python and run the tests
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r cartiva/backend/requirements.txt
-
-# 3. Run the tests (no database needed: tests use isolated in-memory databases)
 python -m pytest cartiva/backend/tests analytics/tests -q
 
-# 4. Load the shop dataset into PostgreSQL (schema "analytics")
+# 3. Load the shop data and export every query result as CSV
 bash analytics/load_data.sh
+bash analytics/export_results.sh
 
-# 5. Open the store (after migrations and seeding: see docs/setup.md)
+# 4. Open the store (after migrations and seeding: see docs/setup.md)
 python -m uvicorn cartiva.backend.main:app --reload
 #    then visit http://127.0.0.1:8000/shop/
 ```
 
-Full setup (database roles, migrations, permissions, seed data):
-[`docs/setup.md`](docs/setup.md).
-Endpoint behavior and status codes: [`docs/api.md`](docs/api.md).
+## Tools
 
----
+| Purpose | Tools |
+|---|---|
+| Analysis | PostgreSQL SQL (written in DBeaver), Tableau Public |
+| Data | PostgreSQL 18 (Docker), Python data generator with a fixed seed |
+| Store and backend | Python 3.11, FastAPI, SQLModel, Alembic |
+| Testing and CI | pytest, GitHub Actions |
 
 ## How this was built
 
 I wrote Cartiva's business requirements and policies, made the design and
 data decisions, and reviewed and tested every change. I used **Claude Code**
-as an AI coding assistant to write most of the application, backend, data
+as an AI coding assistant to write the application, backend, data
 generator and storefront code, and to draft the first set of analysis
 queries (`02`–`07` in `analytics/queries/`). I ran and verified every query
 result, chose the metrics, built the Tableau dashboard and wrote the findings.
 
-## Quality principles
-
-- Run tests against real application logic or APIs.
-- Review AI-generated test suggestions before execution.
-- Never execute arbitrary AI-generated code.
-- Base dashboards on stored execution results.
-- Keep requirements, tests, runs, and defects isolated by application.
-- Distinguish application failures from execution infrastructure errors.
-
 ## Known limitations
 
-- **Tests run on SQLite, not PostgreSQL.** PostgreSQL-specific behavior
-  (row locking under concurrency, permissions) was checked manually, not in
-  automated tests.
-- **Concurrency was smoke-tested once by hand:** two simultaneous requests for
-  5 units each against stock of 8. One succeeded, one was rejected, and the
-  stored quantity stayed 5.
-- **Not built:** checkout, inventory deduction, guest-session cookies, and
-  duplicate-checkout protection (CART-008, CART-009, CART-011). These are
-  outside the current scope.
-- **Tests are not yet tagged with requirement IDs**, so requirement-level
-  coverage can't be reported automatically yet.
-- **The shop data is synthetic.** Findings from it demonstrate metric design
-  and analysis method, not real customer behavior. The built-in effects are
-  disclosed in [`docs/data-assumptions.md`](docs/data-assumptions.md).
-- **The storefront has no checkout**, and orders in the dataset are generated,
+- **The data is synthetic.** The WELCOME10 effect and the category
+  differences were built into the generator on purpose and are disclosed;
+  the analysis shows method, not real-world causes.
+- **Conversion is higher than a typical store** (about 11% of sessions end in
+  an order, versus roughly 2–5% in real e-commerce), because every visitor is
+  a registered customer.
+- **No returns, refunds or price changes** are modeled.
+- **The storefront has no checkout**; orders in the dataset are generated,
   not placed through the store.
+- **API tests run on SQLite**; PostgreSQL-specific behavior (row locking,
+  permissions) was checked manually.
 
 ## Roadmap
 
-1. SQL analysis: KPIs, conversion funnel, cart abandonment, average order
-   value by category, WELCOME10 groups, sale periods vs normal weeks
-2. Tableau Public dashboard + findings memo
-3. WELCOME10 A/B significance test; cohort and repeat-customer analysis
-4. Policy changes over time (new promotions with effective dates) and
-   before/after analysis
-5. Later phase: mutation suite and LLM test-proposal evaluation
+1. Cohort and repeat-customer analysis
+2. New promotions with effective dates, then a before/after analysis
+3. Evaluation of LLM-generated test cases (rubric, human labeling,
+   inter-rater agreement, defects caught)
