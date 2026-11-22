@@ -1,6 +1,6 @@
 # Cartiva: E-commerce Analytics Case Study (SQL + Tableau)
 
-[![Backend CI](https://github.com/RuchaPanhale/ai-software-testing-platform/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/RuchaPanhale/ai-software-testing-platform/actions/workflows/tests.yml)
+[![Backend CI](https://github.com/RuchaPanhale/artiva-ecommerce-analytics/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/RuchaPanhale/artiva-ecommerce-analytics/actions/workflows/tests.yml)
 
 Cartiva is a fictional online fashion store that I built as an end-to-end
 data analytics project. I defined its business rules (pricing, discounts,
