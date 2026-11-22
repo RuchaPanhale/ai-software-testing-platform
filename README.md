@@ -32,8 +32,8 @@ built to demonstrate data modeling, SQL, experiment design, and AI-evaluation sk
 | Pricing rules: WELCOME10 discount, shipping, totals (tested against the acceptance examples) | ✅ Done |
 | Synthetic shop dataset: 2 years, 8,000 customers, ~80K events | ✅ Done |
 | Storefront page (browse, filter, search, add to bag) | ✅ Done |
-| SQL analysis + findings memo | 🔜 Next |
-| Tableau Public dashboard | 🔜 Next |
+| SQL analysis + findings memo | 🔄 In progress |
+| Tableau Public dashboard | 🔄 In progress |
 | WELCOME10 A/B significance test | 📋 Planned |
 | Mutation suite + LLM test-proposal evaluation | 📋 Planned (later phase) |
 
@@ -52,7 +52,7 @@ flowchart LR
     end
 
     subgraph BIZ["Business analytics"]
-        GEN["Synthetic shop data ✅<br/>sessions, events, orders"] --> SQL["SQL analysis 🔜<br/>funnel, AOV, A/B test"]
+        GEN["Synthetic shop data ✅<br/>sessions, events, orders"] --> SQL["SQL analysis 🔄<br/>funnel, AOV, A/B test"]
     end
 
     subgraph EVAL["AI evaluation 📋"]
@@ -64,7 +64,7 @@ flowchart LR
     R --> LLM
     DB --> GEN
     RUN --> API
-    SQL --> DASH["📊 Tableau dashboard 🔜"]
+    SQL --> DASH["📊 Tableau dashboard 🔄"]
     RUN --> DASH
 ```
 
@@ -75,7 +75,7 @@ check it, and the AI's proposals are judged against it.
 
 ## Questions this project answers
 
-**Business (data analyst)** — 🔜 dataset ready, SQL analysis in progress
+**Business (data analyst)** — 🔄 in progress: SQL queries and a Tableau dashboard ([see below](#7-analysis-in-progress))
 - Where do shoppers drop off between viewing a product, adding to cart, and ordering?
 - Which categories have the highest cart-abandonment rate?
 - What is the average order value, and how does it vary by category?
@@ -243,6 +243,28 @@ A minimal store page at `/shop` that browses, filters and searches the 36
 products and adds items to a bag through the real cart API. Prices always come
 from the server. Checkout is intentionally not part of this demo.
 
+### 7. Analysis (in progress)
+
+The analysis workflow is set up and running end to end:
+
+```mermaid
+flowchart LR
+    PG[("PostgreSQL<br/>analytics schema")] --> Q["SQL queries<br/>analytics/queries/"]
+    Q --> X["CSV exports<br/>analytics/exports/"]
+    X --> T["Tableau Public"]
+```
+
+- **SQL:** queries are saved as numbered files in
+  [`analytics/queries/`](analytics/queries/) and run against PostgreSQL.
+- **Exports:** query results are saved to
+  [`analytics/exports/`](analytics/exports/) for Tableau.
+- **First chart:** [Top 10 products by units sold](https://public.tableau.com/app/profile/rucha.panhale/viz/CartivaTopProducts/Top10ProductsbyUnitsSold)
+  on Tableau Public.
+
+**Now working on:** KPI, conversion funnel, cart abandonment, average order
+value by category, WELCOME10 group comparison and sale-period queries, which
+feed a one-page Tableau dashboard and a written findings memo.
+
 ---
 
 ## AI evaluation design (planned)
@@ -281,7 +303,7 @@ Planned measurements:
 | Backend | Python 3.11, FastAPI, Pydantic |
 | Testing & CI | pytest, GitHub Actions, JUnit XML |
 | Data generation | Python (standard library only), seeded and tested |
-| Analysis | PostgreSQL SQL, Tableau Public |
+| Analysis | PostgreSQL SQL (written in DBeaver), Tableau Public |
 | Storefront | HTML, CSS, JavaScript (no framework), served by FastAPI |
 
 ---
