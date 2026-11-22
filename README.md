@@ -2,22 +2,35 @@
 
 [![Backend CI](https://github.com/RuchaPanhale/ai-software-testing-platform/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/RuchaPanhale/ai-software-testing-platform/actions/workflows/tests.yml)
 
-**How does a growing online fashion store turn visits into revenue, and where
-does it lose shoppers?** I answered that with PostgreSQL and Tableau on two
-years of shop data: 8,000 customers, 22,249 sessions, 80,178 events and
-2,384 orders, including a randomized A/B test of a discount code.
+Cartiva is a fictional online fashion store that I built as an end-to-end
+data analytics project. I defined its business rules (pricing, discounts,
+shipping), generated two years of realistic shop activity (8,000 customers,
+22,249 sessions, 80,178 events and 2,384 orders, including a randomized A/B
+test of a discount code), analyzed it with SQL in PostgreSQL, and turned the
+results into an interactive Tableau dashboard with key findings.
 
-### 📊 [View the live dashboard on Tableau Public](https://public.tableau.com/app/profile/rucha.panhale/viz/CartivaShopPerformance/CartivaDashboard)
+## Questions I answered
 
-[![Cartiva Shop Performance dashboard](docs/images/dashboard.png)](https://public.tableau.com/app/profile/rucha.panhale/viz/CartivaShopPerformance/CartivaDashboard)
-
-A portfolio project by **Rucha Panhale** (MS Computer Science, AI track) ·
-[LinkedIn](https://www.linkedin.com/in/rucha-panhale/)
+- How did revenue, orders and average order value change from 2024 to 2025?
+- Where in the funnel do shoppers drop off between browsing and buying?
+- Which product categories sell most, and which are most often abandoned in the cart?
+- Did the WELCOME10 discount get more new customers to buy, and is the
+  difference statistically significant?
+- What do sitewide sales do to traffic, orders and order size?
 
 **Skills demonstrated:** SQL (CTEs, joins, window functions, aggregation) ·
 KPI and metric definition · funnel and cohort-style analysis · A/B testing and
 statistical significance · data modeling and data-quality validation ·
 Tableau dashboard design · communicating findings
+
+A portfolio project by **Rucha Panhale** (MS Computer Science, AI track) ·
+[LinkedIn](https://www.linkedin.com/in/rucha-panhale/)
+
+## Dashboard
+
+### 📊 [View the live dashboard on Tableau Public](https://public.tableau.com/app/profile/rucha.panhale/viz/CartivaShopPerformance/CartivaDashboard)
+
+[![Cartiva Shop Performance dashboard](docs/images/dashboard.png)](https://public.tableau.com/app/profile/rucha.panhale/viz/CartivaShopPerformance/CartivaDashboard)
 
 > Cartiva is a fictional store and its data is **synthetic**: generated with a
 > fixed random seed and fully documented assumptions
