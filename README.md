@@ -342,8 +342,9 @@ Endpoint behavior and status codes: [`docs/api.md`](docs/api.md).
 I wrote Cartiva's business requirements and policies, made the design and
 data decisions, and reviewed and tested every change. I used **Claude Code**
 as an AI coding assistant to write most of the application, backend, data
-generator and storefront code. The SQL analysis, Tableau dashboard and
-findings are my own work.
+generator and storefront code, and to draft the first set of analysis
+queries (`02`–`07` in `analytics/queries/`). I ran and verified every query
+result, chose the metrics, built the Tableau dashboard and wrote the findings.
 
 ## Quality principles
 

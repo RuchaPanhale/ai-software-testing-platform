@@ -1,0 +1,10 @@
+category,add_to_cart_events,purchased_lines,units_sold,orders,gross_sales_usd,share_of_sales_pct,cart_abandonment_pct
+Accessories,1593,640,706,624,30457.94,16.3,59.8
+Dresses,879,326,365,319,27391.35,14.6,62.9
+Jeans,1049,372,412,364,25880.88,13.8,64.5
+Outerwear,609,167,184,167,25698.16,13.7,72.6
+Shoes,810,259,288,258,24317.12,13.0,68.0
+Shirts,1069,388,429,379,17665.71,9.4,63.7
+Knitwear,512,163,181,163,17468.19,9.3,68.2
+Tops,1161,382,434,376,11650.66,6.2,67.1
+Skirts,379,118,135,118,6598.65,3.5,68.9
