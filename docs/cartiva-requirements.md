@@ -1,6 +1,6 @@
 # Cartiva — Application Requirements and Acceptance Criteria
 
-- Project: AI Software Testing & Regression Platform
+- Project: Cartiva E-commerce Analytics
 - Application: Cartiva
 - Application ID: cartiva
 - Document version: 0.2
