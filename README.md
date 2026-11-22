@@ -4,10 +4,7 @@
 
 Cartiva is a fictional online fashion store that I built as an end-to-end
 data analytics project. I defined its business rules (pricing, discounts,
-shipping), generated two years of realistic shop activity (8,000 customers,
-22,249 sessions, 80,178 events and 2,384 orders, including a randomized A/B
-test of a discount code), analyzed it with SQL in PostgreSQL, and turned the
-results into an interactive Tableau dashboard with key findings.
+shipping), generated two years of realistic shop activity (8,000 customers, 2,384 orders, including a randomized A/B test of a discount code), analyzed it with SQL in PostgreSQL, and turned the results into an interactive Tableau dashboard with key findings.
 
 ## Questions I answered
 
